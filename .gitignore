@@ -1,0 +1,52 @@
+# ============================================================
+智能课程助教平台_PAD需求文档.md
+*.html
+*.xlsx
+
+# ============================================================
+# 🐍 Python & Conda 环境
+# ============================================================
+venv/
+env/
+.venv/
+.env/
+conda-env/
+
+# ============================================================
+# 🟦 前端 (frontend/ - Vite + React + TS)
+# ============================================================
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.biome-cache/
+frontend/coverage/
+frontend/.turbo/
+
+# ============================================================
+# 🟨 后端 Java (backend-java/)
+# ============================================================
+backend-java/target/
+backend-java/**/target/
+backend-java/.gradle/
+backend-java/**/build/
+backend-java/out/
+backend-java/logs/
+
+# ============================================================
+# 🟪 后端 Python (backend-python/)
+# ============================================================
+backend-python/.venv/
+backend-python/venv/
+backend-python/env/
+backend-python/__pycache__/
+backend-python/*.pyc
+backend-python/.pytest_cache/
+backend-python/dist/
+backend-python/build/
+
+# ============================================================
+# 🖥️ IDE / 编辑器 配置
+# ============================================================
+.vscode/
+.idea/
+*.sublime-workspace

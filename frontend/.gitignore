@@ -1,0 +1,25 @@
+node_modules/
+dist/
+dist-ssr/
+coverage/
+*.local
+
+.env
+.env.*
+!.env.example
+
+# 编辑器
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# 日志
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+# 产物体积分析
+stats.html
