@@ -1,13 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { type FocusEvent, type ReactNode, useId, useRef } from 'react'
+import { type FocusEvent, useId, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { describeField, FieldShell } from '@/components/shared/field-shell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { fetchCourseCodeCheckSafe, isCourseCodeConflict } from '@/features/course/api'
 import { useSaveCourseMutation, useSemestersQuery } from '@/features/course/queries'
-import { cn } from '@/lib/utils'
 import {
   COURSE_CODE_PATTERN,
   COURSE_COLOR_PRESETS,
@@ -34,39 +34,6 @@ const VISIBILITY_OPTIONS: Array<{
   { value: 'PRIVATE', label: '私有', hint: '仅自己可见' },
   { value: 'PUBLIC', label: '公开', hint: '列表中对所有人可见' },
 ]
-
-interface FieldShellProps {
-  id: string
-  label: string
-  error?: string | undefined
-  hint?: string | undefined
-  children: ReactNode
-  className?: string
-}
-
-/** 统一的「标签 + 控件 + 错误」外壳，负责 label / aria-describedby / role=alert 的接线 */
-function FieldShell({ id, label, error, hint, children, className }: FieldShellProps) {
-  const hintId = `${id}-hint`
-  const errorId = `${id}-error`
-
-  return (
-    <div className={cn('space-y-1.5', className)}>
-      <label htmlFor={id} className="font-medium text-sm">
-        {label}
-      </label>
-      {children}
-      {error ? (
-        <p id={errorId} role="alert" className="text-destructive text-xs">
-          {error}
-        </p>
-      ) : hint ? (
-        <p id={hintId} className="text-muted-foreground text-xs">
-          {hint}
-        </p>
-      ) : null}
-    </div>
-  )
-}
 
 interface CourseFormProps {
   /** 有值 = 编辑态 */
@@ -141,10 +108,8 @@ export function CourseForm({ courseId, defaultValues, onSaved, onCancel }: Cours
   }
 
   /** 有错误时指向错误节点，否则指向提示节点（两个 id 由 FieldShell 派生） */
-  const describe = (name: keyof CourseFormValues): string => {
-    const base = `${fieldId}-${name}`
-    return errors[name] ? `${base}-error` : `${base}-hint`
-  }
+  const describe = (name: keyof CourseFormValues): string =>
+    describeField(`${fieldId}-${name}`, errors[name] !== undefined)
 
   return (
     <form

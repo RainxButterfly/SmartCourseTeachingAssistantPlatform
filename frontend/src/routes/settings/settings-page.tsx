@@ -1,8 +1,9 @@
+import { ChangePasswordForm } from '@/features/auth/components/change-password-form'
 import { ModelConfigForm } from '@/features/settings/components/model-config-form'
 
 /**
- * 设置页（PAD §6.2 SettingsPage）。
- * 当前仅承载大模型配置（BYOK），后续其它全局设置在此扩展。
+ * 设置页（PAD §6.2 SettingsPage，v0.14）。
+ * 两张相互独立的卡片：① 大模型配置（BYOK）；② 账号安全（改密码）。
  */
 export function SettingsPage() {
   return (
@@ -15,6 +16,8 @@ export function SettingsPage() {
       </header>
 
       <ModelConfigForm />
+
+      <ChangePasswordForm />
     </div>
   )
 }

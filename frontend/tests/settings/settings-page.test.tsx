@@ -2,11 +2,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { setupServer } from 'msw/node'
+import { MemoryRouter } from 'react-router'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { db } from '@/mocks/db'
 import { handlers } from '@/mocks/handlers'
+import { resetAuthStore } from '@/mocks/handlers/auth'
 import { SettingsPage } from '@/routes/settings/settings-page'
+import { useAuthStore } from '@/stores/auth-store'
 
 const server = setupServer(...handlers)
 
@@ -20,7 +23,10 @@ function renderSettingsPage() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <SettingsPage />
+      {/* 账号安全卡片内部用 useNavigate 跳登录页，因此需要 Router 上下文 */}
+      <MemoryRouter initialEntries={['/settings']}>
+        <SettingsPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -34,6 +40,12 @@ afterAll(() => {
 })
 
 beforeEach(() => {
+  resetAuthStore()
+  useAuthStore.setState({
+    accessToken: 'mock-access-token',
+    refreshToken: 'mock-refresh-token',
+    user: { id: 1, username: '张三', avatar: null, email: 'demo@example.com' },
+  })
   db.modelConfig = {
     provider: 'DEEPSEEK',
     base_url: 'https://api.deepseek.com/v1',

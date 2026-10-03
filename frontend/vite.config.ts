@@ -37,6 +37,8 @@ export default defineConfig({
     css: true,
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.{test,spec}.{ts,tsx}', 'src/**/*.{test,spec}.{ts,tsx}'],
+    // 默认 5s 对「渲染 → 点击 → SSE 流式 → 断言引用」这类用例在并行争用下过紧，放宽到 20s
+    testTimeout: 20_000,
   },
   root: projectRoot,
 })

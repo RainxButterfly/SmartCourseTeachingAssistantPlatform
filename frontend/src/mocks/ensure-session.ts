@@ -19,6 +19,6 @@ export function ensureMockSession(): void {
   state.setSession({
     accessToken: 'mock-access-token',
     refreshToken: 'mock-refresh-token',
-    user: { id: 1, username: '张三', avatar: null },
+    user: { id: 1, username: '张三', avatar: null, email: 'demo@example.com' },
   })
 }

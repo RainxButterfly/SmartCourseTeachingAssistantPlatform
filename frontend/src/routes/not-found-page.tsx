@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 
 export function NotFoundPage() {
   return (
@@ -10,7 +10,9 @@ export function NotFoundPage() {
         <h2 className="font-medium text-lg">页面不存在</h2>
         <p className="text-muted-foreground text-sm">你访问的地址可能已被移动或删除。</p>
       </div>
-      <Button render={<Link to="/" />}>返回首页</Button>
+      <Link to="/" className={buttonVariants()}>
+        返回首页
+      </Link>
     </div>
   )
 }

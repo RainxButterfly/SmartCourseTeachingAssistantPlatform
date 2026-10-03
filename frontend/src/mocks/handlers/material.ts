@@ -1,6 +1,7 @@
 import { HttpResponse, type HttpResponseResolver, http } from 'msw'
 
 import { env } from '@/lib/env'
+import { pushActivity } from '@/mocks/activity'
 import { db, nextSequence, nowIso, syncCourseCounters } from '@/mocks/db'
 import { fail, ok, paginate, readIntParam } from '@/mocks/utils/response'
 import { ERROR_CODES } from '@/schemas/common'
@@ -232,6 +233,14 @@ const deleteMaterial: HttpResponseResolver = ({ params }) => {
   delete db.parseStatusByMaterial[id]
   syncCourseCounters(material.course_id)
 
+  // PAD §8：删除资料写一条活动流
+  pushActivity({
+    type: 'MATERIAL_DELETED',
+    target_id: String(id),
+    target_type: 'MATERIAL',
+    title: `删除资料《${material.name}》`,
+  })
+
   return ok({ id, deleted: true })
 }
 
@@ -352,6 +361,14 @@ const getParseStatus: HttpResponseResolver = ({ params }) => {
     material.status = 'READY'
     material.page_count = material.page_count === 0 ? 42 : material.page_count
     material.chunk_count = advanced.total_chunks
+
+    // PAD §8：上传资料的活动挂在「解析完成」而非上传完成，避免活动流出现尚不可用的资料
+    pushActivity({
+      type: 'MATERIAL_UPLOADED',
+      target_id: String(material.id),
+      target_type: 'MATERIAL',
+      title: `上传资料《${material.name}》并完成解析`,
+    })
   } else if (advanced.status === 'RUNNING' && material.status !== 'EMBEDDING') {
     material.status = advanced.stage === '向量化中' ? 'EMBEDDING' : 'PARSING'
   }

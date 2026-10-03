@@ -1,6 +1,5 @@
 import { ArrowLeft, BarChart3, MessageSquareText, Paperclip, Pencil } from 'lucide-react'
-import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { EmptyState } from '@/components/shared/empty-state'
 import { Badge } from '@/components/ui/badge'
@@ -27,16 +26,37 @@ function DetailSkeleton() {
   )
 }
 
+const TAB_VALUES = ['materials', 'chat', 'stats'] as const
+type CourseTab = (typeof TAB_VALUES)[number]
+
+function toCourseTab(value: string | null): CourseTab {
+  return value !== null && (TAB_VALUES as readonly string[]).includes(value)
+    ? (value as CourseTab)
+    : 'materials'
+}
+
 /**
  * 课程详情：资料 / 问答 / 统计 三个 Tab（PAD §6.2）。
- * 已交付「资料」Tab（预签名上传 + 内联解析进度 + 分页）与「问答」Tab（SSE 流式 + 引用溯源 + 停止生成）；
- * 统计 Tab 依赖图表，随后续切片接入。
+ * Tab 状态同步 URL（`?tab=`，默认 materials 不写入），使「继续学习」等入口可直达指定 Tab。
  */
 export function CourseDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const courseId = Number(id)
-  const [tab, setTab] = useState('materials')
+
+  const tab = toCourseTab(searchParams.get('tab'))
+  const setTab = (next: CourseTab): void => {
+    setSearchParams(
+      (current) => {
+        const params = new URLSearchParams(current)
+        if (next === 'materials') params.delete('tab')
+        else params.set('tab', next)
+        return params
+      },
+      { replace: true },
+    )
+  }
 
   const detailQuery = useCourseDetailQuery(courseId)
   const detail = detailQuery.data
@@ -164,7 +184,7 @@ export function CourseDetailPage() {
         ))}
       </dl>
 
-      <Tabs value={tab} onValueChange={(value) => setTab(String(value))}>
+      <Tabs value={tab} onValueChange={(value) => setTab(toCourseTab(String(value)))}>
         <TabsList>
           <TabsTrigger value="materials">
             <Paperclip aria-hidden="true" />

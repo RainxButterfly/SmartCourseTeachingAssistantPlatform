@@ -61,6 +61,23 @@ export function configureHttpAuth(bridge: HttpAuthBridge): void {
   authBridge = bridge
 }
 
+/**
+ * 刷新一次 access token（失败返回 null）。
+ * 供**非 axios 通道**复用 —— SSE 用 fetch，无法经过下面的响应拦截器。
+ */
+export async function refreshAccessTokenOnce(): Promise<string | null> {
+  if (!authBridge.refresh) return null
+  return authBridge.refresh().catch(() => null)
+}
+
+/**
+ * 清空本地会话（对应拦截器里不可恢复的 401）。
+ * 同上，供非 axios 通道在「刷新失败 / 重放仍 401」时保持行为一致（PAD §7.1）。
+ */
+export function clearSessionOnUnauthorized(): void {
+  authBridge.onUnauthorized()
+}
+
 interface RetriableConfig extends InternalAxiosRequestConfig {
   __retried?: boolean
   __skipAuth?: boolean

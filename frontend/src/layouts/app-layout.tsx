@@ -3,6 +3,7 @@ import {
   BookOpen,
   LayoutDashboard,
   LogOut,
+  Menu,
   MessageSquareText,
   Moon,
   NotebookPen,
@@ -11,9 +12,12 @@ import {
   Settings,
   Sun,
 } from 'lucide-react'
+import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { logout } from '@/features/auth/api'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUiStore } from '@/stores/ui-store'
@@ -40,100 +44,84 @@ function GitHubMark() {
   )
 }
 
-export function AppLayout() {
-  const navigate = useNavigate()
-  const user = useAuthStore((state) => state.user)
-  const clearSession = useAuthStore((state) => state.clearSession)
-  const collapsed = useUiStore((state) => state.sidebarCollapsed)
-  const toggleSidebar = useUiStore((state) => state.toggleSidebar)
-  const theme = useUiStore((state) => state.theme)
-  const setTheme = useUiStore((state) => state.setTheme)
+interface SidebarBodyProps {
+  /** 折叠为图标栏；抽屉里恒为展开 */
+  collapsed: boolean
+  /** 桌面上的收起/展开回调；不传则不渲染该按钮（抽屉里不需要） */
+  onToggle?: () => void
+  /** 点击导航项后的回调；抽屉里用于自动关闭 */
+  onNavigate?: () => void
+}
 
-  const isDark = theme === 'dark'
-
-  const handleLogout = (): void => {
-    clearSession()
-    navigate('/login', { replace: true })
-  }
-
+/** 侧边栏内容 —— 桌面固定栏与窄屏抽屉共用，避免两处维护 */
+function SidebarBody({ collapsed, onToggle, onNavigate }: SidebarBodyProps) {
   return (
-    <div className="flex h-dvh w-full overflow-hidden bg-background">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
-      >
-        跳到主要内容
-      </a>
+    <>
+      <div className="flex h-14 items-center gap-2 px-3">
+        <span
+          aria-hidden="true"
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground"
+        >
+          助
+        </span>
+        {collapsed ? null : <span className="truncate font-semibold text-sm">智能课程助教</span>}
+      </div>
 
-      <aside
-        className={cn(
-          'flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200',
-          collapsed ? 'w-16' : 'w-60',
-        )}
-      >
-        <div className="flex h-14 items-center gap-2 px-3">
-          <span
-            aria-hidden="true"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground"
+      <nav aria-label="主导航" className="flex-1 space-y-1 overflow-y-auto px-2 py-2">
+        {NAV_ITEMS.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            title={collapsed ? item.label : undefined}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors',
+                'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring',
+                isActive
+                  ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                  : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
+                collapsed && 'justify-center px-0',
+              )
+            }
           >
-            助
-          </span>
-          {collapsed ? null : <span className="truncate font-semibold text-sm">智能课程助教</span>}
-        </div>
+            <item.icon aria-hidden="true" className="size-4 shrink-0" />
+            {collapsed ? null : <span className="truncate">{item.label}</span>}
+          </NavLink>
+        ))}
+      </nav>
 
-        <nav aria-label="主导航" className="flex-1 space-y-1 px-2 py-2">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              title={collapsed ? item.label : undefined}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors',
-                  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring',
-                  isActive
-                    ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-                    : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
-                  collapsed && 'justify-center px-0',
-                )
-              }
-            >
-              <item.icon aria-hidden="true" className="size-4 shrink-0" />
-              {collapsed ? null : <span className="truncate">{item.label}</span>}
-            </NavLink>
-          ))}
-        </nav>
+      <div className="border-t border-sidebar-border p-2">
+        <a
+          href={REPO_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          title={`作者 ${AUTHOR_NAME} · 查看源码`}
+          className={cn(
+            'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-muted-foreground text-xs transition-colors',
+            'hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring',
+            collapsed && 'justify-center px-0',
+          )}
+        >
+          <GitHubMark />
+          {collapsed ? null : (
+            <span className="min-w-0 flex-1">
+              <span className="block truncate">作者 {AUTHOR_NAME}</span>
+              <span className="block truncate opacity-70">查看源码</span>
+            </span>
+          )}
+        </a>
+      </div>
 
-        <div className="border-t border-sidebar-border p-2">
-          <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noreferrer noopener"
-            title={`作者 ${AUTHOR_NAME} · 查看源码`}
-            className={cn(
-              'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-muted-foreground text-xs transition-colors',
-              'hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
-              'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring',
-              collapsed && 'justify-center px-0',
-            )}
-          >
-            <GitHubMark />
-            {collapsed ? null : (
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">作者 {AUTHOR_NAME}</span>
-                <span className="block truncate opacity-70">查看源码</span>
-              </span>
-            )}
-          </a>
-        </div>
-
+      {onToggle === undefined ? null : (
         <div className="border-t border-sidebar-border p-2">
           <Button
             variant="ghost"
             size="sm"
             className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
-            onClick={toggleSidebar}
+            onClick={onToggle}
             aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
             aria-expanded={!collapsed}
           >
@@ -147,17 +135,87 @@ export function AppLayout() {
             )}
           </Button>
         </div>
+      )}
+    </>
+  )
+}
+
+export function AppLayout() {
+  const navigate = useNavigate()
+  const user = useAuthStore((state) => state.user)
+  const clearSession = useAuthStore((state) => state.clearSession)
+  const collapsed = useUiStore((state) => state.sidebarCollapsed)
+  const toggleSidebar = useUiStore((state) => state.toggleSidebar)
+  const theme = useUiStore((state) => state.theme)
+  const setTheme = useUiStore((state) => state.setTheme)
+  /** 窄屏（< md）下主导航改为抽屉，避免固定 240px 侧栏把正文挤到不可用 */
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  const isDark = theme === 'dark'
+
+  const handleLogout = (): void => {
+    const refreshToken = useAuthStore.getState().refreshToken
+    const finish = (): void => {
+      clearSession()
+      navigate('/login', { replace: true })
+    }
+
+    if (refreshToken === null) {
+      finish()
+      return
+    }
+
+    // 先吊销 refresh token（PAD §7.1），失败也不阻断本地登出
+    void logout(refreshToken)
+      .catch(() => undefined)
+      .finally(finish)
+  }
+
+  return (
+    <div className="flex h-dvh w-full overflow-hidden bg-background">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+      >
+        跳到主要内容
+      </a>
+
+      {/* 桌面固定侧栏：md 以下隐藏，改由顶部菜单按钮打开抽屉 */}
+      <aside
+        className={cn(
+          'hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex',
+          collapsed ? 'w-16' : 'w-60',
+        )}
+      >
+        <SidebarBody collapsed={collapsed} onToggle={toggleSidebar} />
       </aside>
+
+      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <SheetContent side="left" className="gap-0 bg-sidebar p-0 text-sidebar-foreground">
+          {/* 抽屉需要一个可访问标题；视觉上已由品牌行承担，故仅屏幕阅读器可见 */}
+          <SheetTitle className="sr-only">主导航</SheetTitle>
+          <SidebarBody collapsed={false} onNavigate={() => setMobileNavOpen(false)} />
+        </SheetContent>
+      </Sheet>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-4">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">
+          <div className="flex min-w-0 items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              aria-label="打开主导航"
+              onClick={() => setMobileNavOpen(true)}
+            >
+              <Menu aria-hidden="true" />
+            </Button>
+            <p className="min-w-0 truncate text-sm font-medium">
               {user ? `你好，${user.username}` : '你好'}
             </p>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <Button
               variant="ghost"
               size="icon"

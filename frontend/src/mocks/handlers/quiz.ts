@@ -1,6 +1,7 @@
 import { type HttpResponseResolver, http } from 'msw'
 
 import { env } from '@/lib/env'
+import { pushActivity } from '@/mocks/activity'
 import { db, nowIso } from '@/mocks/db'
 import { quizBankFixtures, weakPointFixtures } from '@/mocks/fixtures/quiz'
 import { fail, ok, paginate, readIntParam } from '@/mocks/utils/response'
@@ -240,6 +241,14 @@ const submitQuiz: HttpResponseResolver = async ({ request }) => {
   attempt.weak_points = [
     ...new Set(questions.filter((item) => item.is_correct !== true).map((item) => item.point)),
   ]
+
+  // PAD §8：交卷成功写一条活动流
+  pushActivity({
+    type: 'QUIZ_SUBMITTED',
+    target_id: String(attempt.id),
+    target_type: 'QUIZ_ATTEMPT',
+    title: `完成「${attempt.course_name}」练习，答对 ${attempt.correct} / ${attempt.total} 题（${attempt.score} 分）`,
+  })
 
   return ok(toQuizResult(attempt, questions))
 }

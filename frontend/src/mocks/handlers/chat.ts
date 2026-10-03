@@ -1,6 +1,7 @@
 import { type HttpResponseResolver, http } from 'msw'
 
 import { env } from '@/lib/env'
+import { pushActivity } from '@/mocks/activity'
 import { db, nextSequence, nowIso } from '@/mocks/db'
 import { fail, ok, readIntParam } from '@/mocks/utils/response'
 import {
@@ -133,6 +134,16 @@ const chatStream: HttpResponseResolver = async ({ request }) => {
 
   const conversation = resolveConversation(conversationId, courseId, question)
   if (!conversation) return fail(ERROR_CODES.NOT_FOUND, '会话不存在')
+
+  // PAD §8：会话「首次」提问写一条活动流（message_count 仍为 0 即首次），避免每问一条刷屏
+  if (conversation.message_count === 0) {
+    pushActivity({
+      type: 'CHAT_ASKED',
+      target_id: conversation.id,
+      target_type: 'CONVERSATION',
+      title: `在「${conversation.title}」中提问：${question.length > 40 ? `${question.slice(0, 40)}…` : question}`,
+    })
+  }
 
   const messageId = String(Date.now())
   const answer = pickAnswer(question)

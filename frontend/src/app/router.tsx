@@ -3,14 +3,18 @@ import { createBrowserRouter, redirect } from 'react-router'
 import { ComingSoon } from '@/components/shared/coming-soon'
 import { AppLayout } from '@/layouts/app-layout'
 import { AuthLayout } from '@/layouts/auth-layout'
+import { LoginPage } from '@/routes/auth/login-page'
+import { RegisterPage } from '@/routes/auth/register-page'
 import { ChatPage } from '@/routes/chat/chat-page'
 import { CourseDetailPage } from '@/routes/courses/course-detail-page'
 import { CourseFormPage } from '@/routes/courses/course-form-page'
 import { CourseListPage } from '@/routes/courses/course-list-page'
+import { DashboardPage } from '@/routes/dashboard/dashboard-page'
 import { NotFoundPage } from '@/routes/not-found-page'
 import { QuizPage } from '@/routes/quiz/quiz-page'
 import { QuizResultPage } from '@/routes/quiz/quiz-result-page'
 import { SettingsPage } from '@/routes/settings/settings-page'
+import { StatsPage } from '@/routes/stats/stats-page'
 import { isAuthenticated } from '@/stores/auth-store'
 
 /**
@@ -37,11 +41,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/login',
-        element: <ComingSoon title="登录" description="表单校验与 JWT 会话接入中" />,
+        element: <LoginPage />,
       },
       {
         path: '/register',
-        element: <ComingSoon title="注册" description="邮箱注册与密码强度校验接入中" />,
+        element: <RegisterPage />,
       },
     ],
   },
@@ -51,7 +55,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <ComingSoon title="学习概览" description="指标卡、最近课程与活动流" />,
+        element: <DashboardPage />,
       },
       {
         path: 'courses',
@@ -91,7 +95,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'stats',
-        element: <ComingSoon title="学习统计" description="趋势图、薄弱点排行与活动流" />,
+        element: <StatsPage />,
       },
       {
         path: 'settings',

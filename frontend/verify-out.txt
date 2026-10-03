@@ -1,0 +1,358 @@
+﻿
+> smart-course-ta-frontend@0.1.0 verify
+> npm run lint:ci && npm run typecheck && npm run test
+
+
+> smart-course-ta-frontend@0.1.0 lint:ci
+> biome ci src tests
+
+[0m[36mChecked 130 files in 400[0m[0m[2m[36mms[0m[0m[36m.[0m[0m[36m No fixes applied.[0m
+
+> smart-course-ta-frontend@0.1.0 typecheck
+> tsc --noEmit
+
+
+> smart-course-ta-frontend@0.1.0 test
+> vitest run
+
+node.exe : [vite:react-swc] We recommend switching to `@vitejs/plugin-react` for improved performance as no swc plugins
+ are used. More information at https://vite.dev/rolldown
+At line:1 char:1
++ & "D:\E\nvmNodejs\nvm\nodejs/node.exe" "D:\E\nvmNodejs\nvm\nodejs/nod ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([vite:react-swc...te.dev/rolldown:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mD:/E/xiangmu/20260330-/SmartCourseTeachingAssistantPlatform/frontend[39m
+
+ [32m✓[39m tests/chat/sse-unauthorized.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+ [32m✓[39m tests/contract/api-contract.test.ts [2m([22m[2m40 tests[22m[2m)[22m[33m 2439[2mms[22m[39m
+   [32m✓[39m SSE 流式问答契约（PAD §7.9） [2m(3)[22m
+     [33m[2m✓[22m[39m 事件顺序为 start → chunk* → citation → end，且每帧可被 Zod 校验[33m 766[2mms[22m[39m
+     [33m[2m✓[22m[39m 流中异常下发 error 事件，并以下发顺序保证 error 早于 message_end[33m 611[2mms[22m[39m
+ [32m✓[39m tests/layout/app-layout.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1683[2mms[22m[39m
+   [32m✓[39m AppLayout · 主导航 [2m(2)[22m
+     [33m[2m✓[22m[39m 渲染桌面侧栏：6 个导航项、顶部问候语与作者署名[33m 952[2mms[22m[39m
+     [33m[2m✓[22m[39m 菜单按钮打开导航抽屉，点击导航项后抽屉自动关闭[33m 723[2mms[22m[39m
+ [32m✓[39m tests/course/course-form-page.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 3786[2mms[22m[39m
+   [32m✓[39m CourseFormPage · 新建 [2m(5)[22m
+     [33m[2m✓[22m[39m 空表单提交时按 Zod 规则逐字段报错，且不发起请求[33m 957[2mms[22m[39m
+     [33m[2m✓[22m[39m 填写合法数据后提交，创建成功并跳转课程详情[33m 698[2mms[22m[39m
+     [33m[2m✓[22m[39m 课程编号重复时把服务端 1005 映射到 code 字段，而不是弹通用错误[33m 577[2mms[22m[39m
+     [33m[2m✓[22m[39m 课程编号失焦即预检，被占用时给出带课程名的精准提示（v0.4）[33m 542[2mms[22m[39m
+     [33m[2m✓[22m[39m 编辑态未改动编号时不触发预检请求[33m 337[2mms[22m[39m
+   [32m✓[39m CourseFormPage · 编辑 [2m(3)[22m
+     [33m[2m✓[22m[39m 保存修改后走 PUT 并在服务端生效，随后跳转详情[33m 476[2mms[22m[39m
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m渲染概览指标，ratio 类字段转成百分比
+[22m[39mThe width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m渲染概览指标，ratio 类字段转成百分比
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m渲染概览指标，ratio 类字段转成百分比
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m渲染概览指标，ratio 类字段转成百分比
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m渲染概览指标，ratio 类字段转成百分比
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m四张趋势图按契约渲染标题，并按 unit 格
+式化数值
+[22m[39mThe width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m四张趋势图按契约渲染标题，并按 unit 格
+式化数值
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m四张趋势图按契约渲染标题，并按 unit 格
+式化数值
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m四张趋势图按契约渲染标题，并按 unit 格
+式化数值
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m四张趋势图按契约渲染标题，并按 unit 格
+式化数值
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+ [32m✓[39m tests/dashboard/dashboard-page.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 2589[2mms[22m[39m
+   [32m✓[39m DashboardPage · 学习概览 [2m(3)[22m
+     [33m[2m✓[22m[39m 问候语带上当前用户，并渲染三个快捷入口[33m 875[2mms[22m[39m
+     [33m[2m✓[22m[39m 复用统计页的概览指标卡与最近活动流[33m 610[2mms[22m[39m
+     [33m[2m✓[22m[39m 最近课程横滑卡渲染课程，「继续学习」直达该课程问答 Tab[33m 424[2mms[22m[39m
+   [32m✓[39m 课程详情 Tab 深链（概览页「继续学习」的目标） [2m(2)[22m
+     [33m[2m✓[22m[39m 非法 tab 参数回落到资料 Tab[33m 415[2mms[22m[39m
+ [32m✓[39m tests/auth/auth-pages.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 4627[2mms[22m[39m
+   [32m✓[39m LoginPage · 登录 [2m(5)[22m
+     [33m[2m✓[22m[39m 登录成功：写入会话并回跳 ?redirect= 指定的原地址[33m 1216[2mms[22m[39m
+     [33m[2m✓[22m[39m 密码错误：表单顶部就地提示，不写会话也不跳转[33m 440[2mms[22m[39m
+     [33m[2m✓[22m[39m 改动输入会清掉上一次的服务端错误横幅（防残留）[33m 510[2mms[22m[39m
+     [33m[2m✓[22m[39m redirect 为非站内地址时回落首页，避免开放重定向[33m 362[2mms[22m[39m
+   [32m✓[39m RegisterPage · 注册 [2m(4)[22m
+     [33m[2m✓[22m[39m 注册成功即登录并进入首页[33m 551[2mms[22m[39m
+     [33m[2m✓[22m[39m 密码强度不足时按规则报错，不发请求[33m 493[2mms[22m[39m
+     [33m[2m✓[22m[39m 两次密码不一致时在确认框报错[33m 423[2mms[22m[39m
+     [33m[2m✓[22m[39m 邮箱已注册时提示直接登录（1005）[33m 384[2mms[22m[39m
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m切换时间范围会把 month 传给趋势接口，
+并保留已渲染的最新刻度
+[22m[39mThe width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m切换时间范围会把 month 传给趋势接口，
+并保留已渲染的最新刻度
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m切换时间范围会把 month 传给趋势接口，
+并保留已渲染的最新刻度
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m切换时间范围会把 month 传给趋势接口，
+并保留已渲染的最新刻度
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m切换时间范围会把 month 传给趋势接口，
+并保留已渲染的最新刻度
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m切换时间范围会把 month 传给趋势接口，
+并保留已渲染的最新刻度
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m切换时间范围会把 month 传给趋势接口，
+并保留已渲染的最新刻度
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m切换时间范围会把 month 传给趋势接口，
+并保留已渲染的最新刻度
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m切换时间范围会把 month 传给趋势接口，
+并保留已渲染的最新刻度
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+ [32m✓[39m tests/auth/account-security.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 4732[2mms[22m[39m
+   [32m✓[39m 账号安全 · 修改密码 [2m(5)[22m
+     [33m[2m✓[22m[39m 展示当前登录邮箱（取自本地会话，不额外请求 /auth/me）[33m 512[2mms[22m[39m
+     [33m[2m✓[22m[39m 改密码成功：清空会话并跳转登录页[33m 809[2mms[22m[39m
+     [33m[2m✓[22m[39m 原密码错误：就地提示且绝不误登出（1007 而非 1002）[33m 676[2mms[22m[39m
+     [33m[2m✓[22m[39m 新密码强度不足时就地报错且不发请求[33m 494[2mms[22m[39m
+     [33m[2m✓[22m[39m 两次新密码不一致时在确认框报错[33m 507[2mms[22m[39m
+   [32m✓[39m 登录页 · 忘记密码 [2m(3)[22m
+     [33m[2m✓[22m[39m 已注册邮箱：显示统一的防枚举成功文案[33m 715[2mms[22m[39m
+     [33m[2m✓[22m[39m 未注册邮箱：文案与已注册完全一致，不泄露账号是否存在[33m 532[2mms[22m[39m
+     [33m[2m✓[22m[39m 邮箱格式非法时就地报错且不发请求[33m 471[2mms[22m[39m
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m薄弱点排行按掌握度升序展示，活动流展示后端拼
+好的文案
+[22m[39mThe width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m薄弱点排行按掌握度升序展示，活动流展示后端拼
+好的文案
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m薄弱点排行按掌握度升序展示，活动流展示后端拼
+好的文案
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m薄弱点排行按掌握度升序展示，活动流展示后端拼
+好的文案
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+[90mstderr[2m | tests/stats/stats-page.test.tsx[2m > [22m[2mStatsPage · 学习统计[2m > [22m[2m薄弱点排行按掌握度升序展示，活动流展示后端拼
+好的文案
+[22m[39mThe width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+ [32m✓[39m tests/stats/stats-page.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 2638[2mms[22m[39m
+   [32m✓[39m StatsPage · 学习统计 [2m(4)[22m
+     [33m[2m✓[22m[39m 渲染概览指标，ratio 类字段转成百分比[33m 1281[2mms[22m[39m
+     [33m[2m✓[22m[39m 四张趋势图按契约渲染标题，并按 unit 格式化数值[33m 425[2mms[22m[39m
+     [33m[2m✓[22m[39m 切换时间范围会把 month 传给趋势接口，并保留已渲染的最新刻度[33m 550[2mms[22m[39m
+     [33m[2m✓[22m[39m 薄弱点排行按掌握度升序展示，活动流展示后端拼好的文案[33m 357[2mms[22m[39m
+ [32m✓[39m tests/settings/settings-page.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 3754[2mms[22m[39m
+   [32m✓[39m SettingsPage · 大模型配置（BYOK） [2m(5)[22m
+     [33m[2m✓[22m[39m 回填已保存配置；API Key 输入框留空且只展示掩码，不出现明文[33m 974[2mms[22m[39m
+     [33m[2m✓[22m[39m 测试连接：成功后行内展示模型名与耗时[33m 581[2mms[22m[39m
+     [33m[2m✓[22m[39m 保存：只改模型名时不会清空已保存的 API Key[33m 731[2mms[22m[39m
+     [33m[2m✓[22m[39m API 地址非法时就地报错，且不发起保存请求[33m 443[2mms[22m[39m
+     [33m[2m✓[22m[39m 切换厂商预设时带入默认 API 地址与模型名[33m 1009[2mms[22m[39m
+ [32m✓[39m tests/chat/chat-panel.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 8040[2mms[22m[39m
+   [32m✓[39m ChatPanel · 课程问答 [2m(6)[22m
+     [33m[2m✓[22m[39m 空态展示推荐问题，点击后流式生成回答、渲染引用卡片，并可开新对话[33m 3831[2mms[22m[39m
+     [33m[2m✓[22m[39m 停止生成：中断 SSE、保留已生成内容并给出中断提示[33m 400[2mms[22m[39m
+     [33m[2m✓[22m[39m AI 服务不可用时友好降级，输入框复位可继续提问[33m 432[2mms[22m[39m
+     [33m[2m✓[22m[39m 回答完成后可点赞 / 点踩，再次点击同一项即取消[33m 2448[2mms[22m[39m
+     [33m[2m✓[22m[39m 输入框 Enter 发送、Shift+Enter 换行，且走课程检索范围[33m 628[2mms[22m[39m
+ [32m✓[39m tests/course/course-list-page.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 7661[2mms[22m[39m
+   [32m✓[39m CourseListPage [2m(11)[22m
+     [33m[2m✓[22m[39m 渲染课程卡片网格，展示编号、名称与资料数[33m 684[2mms[22m[39m
+     [33m[2m✓[22m[39m 搜索框按 300ms 防抖过滤，命中课程编号[33m 1207[2mms[22m[39m
+     [33m[2m✓[22m[39m 筛选无结果时展示可重置的空态，而不是「还没有课程」[33m 1325[2mms[22m[39m
+     [33m[2m✓[22m[39m 「我的」筛选只保留当前用户创建的课程[33m 422[2mms[22m[39m
+     [33m[2m✓[22m[39m 删除存在子资源的课程时先弹级联确认，确认后才真正删除[33m 1097[2mms[22m[39m
+     [33m[2m✓[22m[39m 点击「新建课程」跳转到课程表单路由[33m 344[2mms[22m[39m
+     [32m✓[39m URL 状态同步（PAD §6.1 v0.3） [2m(5)[22m
+       [33m[2m✓[22m[39m 离散筛选写入 URL，默认值不落 URL[33m 313[2mms[22m[39m
+       [33m[2m✓[22m[39m 学期与排序写入 URL，且学期选项来自 GET /courses/semesters[33m 338[2mms[22m[39m
+       [33m[2m✓[22m[39m 关键词经防抖后写入 URL，供分享与刷新保持[33m 560[2mms[22m[39m
+       [33m[2m✓[22m[39m 后退抹掉 URL 关键词后，本地输入态被回灌而不是把旧值写回（防回归）[33m 1269[2mms[22m[39m
+ [32m✓[39m tests/chat/chat-page.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 7240[2mms[22m[39m
+   [32m✓[39m ChatPage · 三栏问答 [2m(5)[22m
+     [33m[2m✓[22m[39m 打开既有会话：加载历史消息，标题与检索范围按会话回显[33m 1337[2mms[22m[39m
+     [33m[2m✓[22m[39m 新对话：推荐问题提问后流式生成回答，会话自动出现在左栏[33m 3903[2mms[22m[39m
+     [33m[2m✓[22m[39m 点击引用「详情」：右栏展示原文摘录、页码与相关度[33m 332[2mms[22m[39m
+     [33m[2m✓[22m[39m 搜索会话标题：命中项保留，未命中项隐藏[33m 649[2mms[22m[39m
+     [33m[2m✓[22m[39m 重命名会话后左栏标题更新并落库[33m 982[2mms[22m[39m
+ [32m✓[39m tests/material/course-detail-materials.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 7509[2mms[22m[39m
+   [32m✓[39m CourseDetailPage · 资料 Tab [2m(7)[22m
+     [33m[2m✓[22m[39m 渲染课程头部指标与资料表格，状态徽标区分完成/进行中/失败[33m 1610[2mms[22m[39m
+     [33m[2m✓[22m[39m 资料列表分页：翻页后 URL 同步 page=2，且只渲染第 2 页资料[33m 1218[2mms[22m[39m
+     [33m[2m✓[22m[39m 上传闭环：presign → 直传 MinIO → complete，新资料以中间态出现在列表中[33m 800[2mms[22m[39m
+     [33m[2m✓[22m[39m 上传前校验拦截不支持的格式与超限文件，并给出原因[33m 500[2mms[22m[39m
+     [33m[2m✓[22m[39m 删除资料：二次确认后行消失[33m 1194[2mms[22m[39m
+     [33m[2m✓[22m[39m 重命名资料：行内编辑保存后名称更新[33m 2166[2mms[22m[39m
+ [32m✓[39m tests/quiz/quiz-page.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 8854[2mms[22m[39m
+   [32m✓[39m QuizPage · 智能出题 [2m(4)[22m
+     [33m[2m✓[22m[39m 组卷态：渲染范围/题量/题型/难度与薄弱点 chips[33m 1584[2mms[22m[39m
+     [33m[2m✓[22m[39m 完成一次练习：作答 → 标记不确定 → 交卷 → 结果页展示得分与逐题解析[33m 3398[2mms[22m[39m
+     [33m[2m✓[22m[39m 存在未作答时交卷先二次确认，可返回继续作答[33m 1903[2mms[22m[39m
+     [33m[2m✓[22m[39m 答题后交卷的记录出现在练习记录中，可点击回到结果页[33m 1939[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m14 passed[39m[22m[90m (14)[39m
+[2m      Tests [22m [1m[32m118 passed[39m[22m[90m (118)[39m
+[2m   Start at [22m 19:10:32
+[2m   Duration [22m 27.10s[2m (environment 36%, import 29%, tests 23%, setup 7%, transform 5%, worker 1%)[22m
+

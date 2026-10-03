@@ -1,6 +1,7 @@
 import { type HttpResponseResolver, http } from 'msw'
 
 import { env } from '@/lib/env'
+import { pushActivity } from '@/mocks/activity'
 import { db, nextSequence, nowIso, syncCourseCounters } from '@/mocks/db'
 import { fail, ok, paginate, readIntParam } from '@/mocks/utils/response'
 import { ERROR_CODES } from '@/schemas/common'
@@ -157,6 +158,15 @@ const createCourse: HttpResponseResolver = async ({ request }) => {
   }
 
   db.courses.unshift(course)
+
+  // PAD §8：创建课程写一条活动流
+  pushActivity({
+    type: 'COURSE_CREATED',
+    target_id: String(course.id),
+    target_type: 'COURSE',
+    title: `创建课程「${course.name}」`,
+  })
+
   return ok(course)
 }
 

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from '@/mocks/db'
 import { quizBankFixtures } from '@/mocks/fixtures/quiz'
 import { handlers } from '@/mocks/handlers'
+import { AuthResponseSchema, AuthTokensSchema, UserSchema } from '@/schemas/auth'
 import {
   type MessageChunkData,
   MessageChunkDataSchema,
@@ -30,6 +31,7 @@ import {
   WeakPointListResponseSchema,
 } from '@/schemas/quiz'
 import { ModelConfigSchema, ModelTestResultSchema } from '@/schemas/settings'
+import { ActivityListSchema, StatsOverviewSchema, TrendSchema } from '@/schemas/stats'
 
 /**
  * 接口契约回归测试。
@@ -632,5 +634,304 @@ describe('智能出题契约（v0.10 新增）', () => {
     const notSubmitted = await callJson<unknown>(`/quiz/attempts/${quiz.attempt_id}`)
     expect(notSubmitted.status).toBe(400)
     expect(notSubmitted.body.code).toBe(ERROR_CODES.INVALID_PARAM)
+  })
+})
+
+describe('学习统计契约（v0.11 新增）', () => {
+  it('GET /stats/overview 返回六项指标，ratio 类字段落在 0~1', async () => {
+    const { status, body } = await callJson<unknown>('/stats/overview')
+    expect(status).toBe(200)
+
+    const overview = StatsOverviewSchema.parse(body.data)
+    expect(overview.material_count).toBeGreaterThan(0)
+    expect(overview.qa_count).toBeGreaterThan(0)
+    expect(overview.qa_accuracy).toBeGreaterThanOrEqual(0)
+    expect(overview.qa_accuracy).toBeLessThanOrEqual(1)
+    expect(overview.quiz_accuracy).toBeLessThanOrEqual(1)
+    expect(overview.weak_point_count).toBeGreaterThan(0)
+  })
+
+  it('GET /stats/trend 由 type 决定 unit，range 决定刻度数量', async () => {
+    const week = TrendSchema.parse(
+      (await callJson<unknown>('/stats/trend?type=study_time&range=week')).body.data,
+    )
+    const month = TrendSchema.parse(
+      (await callJson<unknown>('/stats/trend?type=study_time&range=month')).body.data,
+    )
+    expect(week.unit).toBe('minute')
+    expect(week.series).toHaveLength(7)
+    expect(month.series).toHaveLength(30)
+    expect(month.series[0]?.label).toBe('09-04')
+
+    const accuracy = TrendSchema.parse(
+      (await callJson<unknown>('/stats/trend?type=quiz_accuracy&range=week')).body.data,
+    )
+    expect(accuracy.unit).toBe('ratio')
+    expect(accuracy.series.every((point) => point.value >= 0 && point.value <= 1)).toBe(true)
+
+    const growth = TrendSchema.parse(
+      (await callJson<unknown>('/stats/trend?type=material_growth&range=week')).body.data,
+    )
+    expect(growth.unit).toBe('count')
+
+    // 命中率为饼图数据：固定两个分类，且忽略 range
+    const pie = TrendSchema.parse(
+      (await callJson<unknown>('/stats/trend?type=qa_hit_rate&range=month')).body.data,
+    )
+    expect(pie.series.map((point) => point.label)).toEqual(['命中资料', '未命中资料'])
+    expect(pie.series.reduce((sum, point) => sum + point.value, 0)).toBeCloseTo(1, 5)
+  })
+
+  it('趋势参数非法时返回 1001', async () => {
+    const bad = await callJson<unknown>('/stats/trend?type=unknown_type&range=week')
+    expect(bad.status).toBe(400)
+    expect(bad.body.code).toBe(ERROR_CODES.INVALID_PARAM)
+
+    const badRange = await callJson<unknown>('/stats/trend?type=study_time&range=quarter')
+    expect(badRange.status).toBe(400)
+    expect(badRange.body.code).toBe(ERROR_CODES.INVALID_PARAM)
+  })
+
+  it('GET /stats/activities 按 limit 截断，并保持时间倒序', async () => {
+    const { status, body } = await callJson<unknown>('/stats/activities?limit=3')
+    expect(status).toBe(200)
+
+    const list = ActivityListSchema.parse(body.data)
+    expect(list.items).toHaveLength(3)
+
+    const times = list.items.map((item) => new Date(item.created_at).getTime())
+    expect([...times].sort((a, b) => b - a)).toEqual(times)
+    // title 由后端拼好，前端直接展示
+    expect(list.items[0]?.title).toContain('练习')
+    expect(list.items[0]?.target_type).not.toBe('')
+  })
+
+  it('业务动作会按 PAD §8 的清单写入活动流（以交卷为例）', async () => {
+    const before = ActivityListSchema.parse(
+      (await callJson<unknown>('/stats/activities?limit=50')).body.data,
+    ).items.length
+
+    const generated = await callJson<unknown>('/quiz/generate', {
+      method: 'POST',
+      body: JSON.stringify({ course_id: 1, count: 1, types: ['SINGLE'], difficulty: 'EASY' }),
+    })
+    const quiz = QuizGenerateResponseSchema.parse(generated.body.data)
+    await callJson<unknown>('/quiz/attempts', {
+      method: 'POST',
+      body: JSON.stringify({ attempt_id: quiz.attempt_id, answers: {}, duration_ms: 12_000 }),
+    })
+
+    const after = ActivityListSchema.parse(
+      (await callJson<unknown>('/stats/activities?limit=50')).body.data,
+    ).items
+
+    expect(after.length).toBe(before + 1)
+    expect(after[0]?.type).toBe('QUIZ_SUBMITTED')
+    expect(after[0]?.target_type).toBe('QUIZ_ATTEMPT')
+    expect(after[0]?.title).toContain('完成「操作系统」练习')
+  })
+})
+
+describe('鉴权契约（v0.13 新增）', () => {
+  const DEMO = { email: 'demo@example.com', password: 'Demo@1234' }
+
+  async function loginDemo() {
+    const { body } = await callJson<unknown>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(DEMO),
+    })
+    return AuthResponseSchema.parse(body.data)
+  }
+
+  it('注册成功即登录（复用 LoginResponse），重复邮箱返回 1005', async () => {
+    const email = `user-${Date.now()}@example.com`
+
+    const created = await callJson<unknown>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, username: '新同学', password: 'Abc@1234' }),
+    })
+    expect(created.status).toBe(200)
+
+    const auth = AuthResponseSchema.parse(created.body.data)
+    expect(auth.user.email).toBe(email)
+    expect(auth.user.username).toBe('新同学')
+    expect(auth.access_token).not.toBe('')
+    expect(auth.expires_in).toBeGreaterThan(0)
+
+    const duplicated = await callJson<unknown>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, username: '新同学', password: 'Abc@1234' }),
+    })
+    expect(duplicated.status).toBe(409)
+    expect(duplicated.body.code).toBe(ERROR_CODES.CONFLICT)
+  })
+
+  it('登录：正确凭据返回 UserVO，错误密码返回 1002 且不泄露具体原因', async () => {
+    const auth = await loginDemo()
+    expect(UserSchema.parse(auth.user).username).toBe('张三')
+
+    const wrongPassword = await callJson<unknown>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: DEMO.email, password: 'Wrong@1234' }),
+    })
+    expect(wrongPassword.status).toBe(401)
+    expect(wrongPassword.body.code).toBe(ERROR_CODES.UNAUTHORIZED)
+
+    const unknownEmail = await callJson<unknown>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'nobody@example.com', password: 'Wrong@1234' }),
+    })
+    expect(unknownEmail.status).toBe(401)
+    // 与密码错误返回同一错误码，避免枚举账号
+    expect(unknownEmail.body.code).toBe(wrongPassword.body.code)
+  })
+
+  it('refresh 轮换：下发新 refresh token，旧的立即失效', async () => {
+    const auth = await loginDemo()
+
+    const refreshed = await callJson<unknown>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: auth.refresh_token }),
+    })
+    expect(refreshed.status).toBe(200)
+
+    const next = AuthTokensSchema.parse(refreshed.body.data)
+    expect(next.refresh_token).not.toBe(auth.refresh_token)
+    expect(next.access_token).not.toBe('')
+
+    const reused = await callJson<unknown>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: auth.refresh_token }),
+    })
+    expect(reused.status).toBe(401)
+    expect(reused.body.code).toBe(ERROR_CODES.UNAUTHORIZED)
+  })
+
+  it('GET /auth/me 按 access token 识别用户；logout 吊销 refresh token', async () => {
+    const auth = await loginDemo()
+
+    const me = await callJson<unknown>('/auth/me', {
+      headers: { Authorization: `Bearer ${auth.access_token}` },
+    })
+    expect(me.status).toBe(200)
+    expect(UserSchema.parse(me.body.data).email).toBe(DEMO.email)
+
+    const anonymous = await callJson<unknown>('/auth/me')
+    expect(anonymous.status).toBe(401)
+    expect(anonymous.body.code).toBe(ERROR_CODES.UNAUTHORIZED)
+
+    const logoutResult = await callJson<unknown>('/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: auth.refresh_token }),
+    })
+    expect(logoutResult.status).toBe(200)
+
+    // 已吊销的 refresh token 不能再用
+    const afterLogout = await callJson<unknown>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: auth.refresh_token }),
+    })
+    expect(afterLogout.status).toBe(401)
+  })
+})
+
+describe('账号安全契约（v0.14 新增）', () => {
+  /** 每次注册一个全新账号，避免改密码影响其它用例 */
+  async function registerAndLogin() {
+    const email = `pwd-${Date.now()}-${Math.random().toString(16).slice(2, 8)}@example.com`
+    const { body } = await callJson<unknown>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, username: '改密用户', password: 'Old@1234' }),
+    })
+    return AuthResponseSchema.parse(body.data)
+  }
+
+  it('PUT /auth/password 原密码错误返回 1007 / 400，而不是 1002（避免触发 401 刷新链路）', async () => {
+    const auth = await registerAndLogin()
+
+    const failed = await callJson<unknown>('/auth/password', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${auth.access_token}` },
+      body: JSON.stringify({ old_password: 'Wrong@1234', new_password: 'New@1234' }),
+    })
+
+    expect(failed.status).toBe(400)
+    expect(failed.body.code).toBe(ERROR_CODES.INVALID_OLD_PASSWORD)
+    expect(failed.body.code).not.toBe(ERROR_CODES.UNAUTHORIZED)
+  })
+
+  it('PUT /auth/password 新密码强度不足返回 1001，且不改动密码', async () => {
+    const auth = await registerAndLogin()
+
+    const weak = await callJson<unknown>('/auth/password', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${auth.access_token}` },
+      body: JSON.stringify({ old_password: 'Old@1234', new_password: 'weakpass' }),
+    })
+    expect(weak.status).toBe(400)
+    expect(weak.body.code).toBe(ERROR_CODES.INVALID_PARAM)
+
+    const stillOld = await callJson<unknown>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: auth.user.email, password: 'Old@1234' }),
+    })
+    expect(stillOld.status).toBe(200)
+  })
+
+  it('改密码成功即吊销该用户全部 refresh token；新密码可登录、旧密码失效', async () => {
+    const auth = await registerAndLogin()
+
+    const changed = await callJson<unknown>('/auth/password', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${auth.access_token}` },
+      body: JSON.stringify({ old_password: 'Old@1234', new_password: 'New@1234' }),
+    })
+    expect(changed.status).toBe(200)
+    expect(changed.body.code).toBe(ERROR_CODES.OK)
+    expect(changed.body.data).toBeNull()
+
+    // 原 refresh token 已被吊销
+    const stale = await callJson<unknown>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: auth.refresh_token }),
+    })
+    expect(stale.status).toBe(401)
+
+    const relogin = await callJson<unknown>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: auth.user.email, password: 'New@1234' }),
+    })
+    expect(relogin.status).toBe(200)
+
+    const oldPassword = await callJson<unknown>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: auth.user.email, password: 'Old@1234' }),
+    })
+    expect(oldPassword.status).toBe(401)
+  })
+
+  it('POST /auth/forgot-password 无论邮箱是否存在都返回同一结果（防用户枚举）', async () => {
+    const registered = await callJson<unknown>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'demo@example.com' }),
+    })
+    const unknown = await callJson<unknown>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'nobody@example.com' }),
+    })
+
+    expect(registered.status).toBe(200)
+    expect(unknown.status).toBe(200)
+    expect(registered.body.code).toBe(ERROR_CODES.OK)
+    expect(unknown.body.code).toBe(registered.body.code)
+    expect(unknown.body.message).toBe(registered.body.message)
+    expect(registered.body.data).toBeNull()
+
+    const invalid = await callJson<unknown>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'not-an-email' }),
+    })
+    expect(invalid.status).toBe(400)
+    expect(invalid.body.code).toBe(ERROR_CODES.INVALID_PARAM)
   })
 })

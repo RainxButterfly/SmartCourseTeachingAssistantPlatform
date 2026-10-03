@@ -1,5 +1,5 @@
 import { env } from '@/lib/env'
-import { ApiError, http } from '@/lib/http'
+import { ApiError, clearSessionOnUnauthorized, http, refreshAccessTokenOnce } from '@/lib/http'
 import { createRequestId } from '@/lib/utils'
 import {
   type ChatRequestBody,
@@ -204,19 +204,34 @@ export async function streamChat(params: StreamChatParams): Promise<void> {
     }, idleTimeoutMs)
   }
 
-  try {
-    const response = await fetch(`${env.apiBaseUrl}${CHAT_STREAM_PATH}`, {
+  /** 单次发起请求；401 恢复需要换 token 重放，故抽成可复用函数 */
+  const requestStream = (token: string | null): Promise<Response> =>
+    fetch(`${env.apiBaseUrl}${CHAT_STREAM_PATH}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
         'Cache-Control': 'no-cache',
         'X-Request-Id': createRequestId(),
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(body),
       signal: controller.signal,
     })
+
+  try {
+    let response = await requestStream(accessToken)
+
+    /*
+     * access_token 过期（2h）时按 PAD §7.1 自动刷新一次并重放。
+     * 这里是 fetch 通道，不经 axios 拦截器，必须显式对齐，否则长会话后提问会直接报登录失效。
+     * 刷新失败或重放后仍 401 —— 与拦截器一致地清会话，让路由守卫把用户送回登录页。
+     */
+    if (response.status === 401) {
+      const nextToken = await refreshAccessTokenOnce()
+      if (nextToken !== null) response = await requestStream(nextToken)
+      if (response.status === 401) clearSessionOnUnauthorized()
+    }
 
     if (!response.ok || !response.body) {
       throw await toStreamApiError(response)

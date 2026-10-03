@@ -94,7 +94,8 @@ export function CourseListFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="relative min-w-56 flex-1">
+      {/* < sm 独占一行（flex-wrap 下 basis=100%），避免被其它筛选组压到只剩图标；sm 以上恢复自适应宽度 */}
+      <div className="relative w-full sm:w-auto sm:min-w-56 sm:flex-1">
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"

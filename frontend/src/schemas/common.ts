@@ -68,6 +68,8 @@ export const ERROR_CODES = {
   NOT_FOUND: 1004,
   CONFLICT: 1005,
   HAS_CHILDREN: 1006,
+  /** 改密码原密码不正确（PAD v0.14；不可用 1002 代替，否则触发 401 刷新链路误登出） */
+  INVALID_OLD_PASSWORD: 1007,
   FILE_TOO_LARGE: 2001,
   UNSUPPORTED_FORMAT: 2002,
   PARSE_TASK_EXISTS: 2003,
@@ -88,6 +90,7 @@ export const ERROR_MESSAGES: Record<number, string> = {
   [ERROR_CODES.NOT_FOUND]: '资源不存在',
   [ERROR_CODES.CONFLICT]: '资源已存在',
   [ERROR_CODES.HAS_CHILDREN]: '该资源下仍有子内容',
+  [ERROR_CODES.INVALID_OLD_PASSWORD]: '原密码不正确',
   [ERROR_CODES.FILE_TOO_LARGE]: '文件超过大小限制',
   [ERROR_CODES.UNSUPPORTED_FORMAT]: '不支持的文件格式',
   [ERROR_CODES.PARSE_TASK_EXISTS]: '解析任务已存在',
