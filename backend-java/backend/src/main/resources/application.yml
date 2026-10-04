@@ -1,0 +1,327 @@
+# =============================================================================
+#  Smart Course Assistant · Backend
+#  Spring Boot 3.2.5 | JDK 21 | MyBatis-Plus 3.5.5 | MySQL 8.4 | Redis7.4.9 | MinIO2025-07-23T15-54-02Z | nacos：2.5.1
+#  契约约定：全链路 snake_case；可空字段一律返回 null（禁止 omit 非空）
+# =============================================================================
+spring:
+  application:
+    name: course-assistant
+
+  profiles:
+    active: local
+
+  main:
+    banner-mode: console
+
+  # ---------------- JDK21 虚拟线程：解析任务 / @Async / SSE 写流 -------------
+  threads:
+    virtual:
+      enabled: true
+
+  # ---------------------------------------------------------------------------
+  # Jackson 全局契约
+  # ---------------------------------------------------------------------------
+  jackson:
+    # 全链路 snake_case：DTO 用驼峰命名即可自动收发 course_id / created_at
+    property-naming-strategy: SNAKE_CASE
+    # 必须是 always！设成 non_null 会吞掉契约里要求的 null 字段
+    default-property-inclusion: always
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+      indent-output: false
+    deserialization:
+      # 前端多传字段 / 灰度版本不一致时不炸
+      fail-on-unknown-properties: false
+  # ---------------------------------------------------------------------------
+  # 数据源（HikariCP）
+  # ---------------------------------------------------------------------------
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:192.168.150.104}:${DB_PORT:3306}/${DB_NAME:course_assistant}?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+    hikari:
+      pool-name: CourseAssistantHikari
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      validation-timeout: 5000
+      connection-test-query: SELECT 1
+
+  # ---------------------------------------------------------------------------
+  # Redis（会话上下文 / 验证码 / 幂等键 / 限流）
+  # ---------------------------------------------------------------------------
+  data:
+    redis:
+      host: ${REDIS_HOST:192.168.150.104}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:123456}
+      database: ${REDIS_DB:0}
+      connect-timeout: 3s
+      timeout: 5s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 3s
+        shutdown-timeout: 100ms
+
+  # ---------------------------------------------------------------------------
+  # RabbitMQ（异步消息队列 / 事件解耦）
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    host: ${RABBITMQ_HOST:192.168.150.104}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:admin}
+    password: ${RABBITMQ_PASSWORD:admin123456}
+    virtual-host: /
+    # 发送端确认（生产端可靠投递）
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        # 消费端 ack 模式：auto 为自动确认，可根据业务切换 manual
+        acknowledge-mode: auto
+        prefetch: 10
+        default-requeue-rejected: false
+
+  # ---------------------------------------------------------------------------
+  # 邮件（注册验证码 / 忘记密码重置邮件）
+  # ---------------------------------------------------------------------------
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 10000
+          writetimeout: 10000
+
+  # ---------------------------------------------------------------------------
+  # MVC：把 404 / 405 也纳入统一响应体 {code,message,data,trace_id}
+  # ---------------------------------------------------------------------------
+  mvc:
+    throw-exception-if-no-handler-found: true
+    async:
+      request-timeout: 1800000   # 30min
+  web:
+    resources:
+      add-mappings: false  # 关闭静态资源映射，配合上面让 404 走 @RestControllerAdvice
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # ---------------------------------------------------------------------------
+  # Nacos 配置中心
+  # Boot 3.x 已移除 bootstrap.yml，必须走 spring.config.import
+  # ---------------------------------------------------------------------------
+#  config:
+#    import:
+#      - optional:nacos:${spring.application.name}.yaml
+#  cloud:
+#    nacos:
+#      server-addr: ${NACOS_ADDR:192.168.150.104:8848}
+#      username: ${NACOS_USER:nacos}
+#      password: ${NACOS_PWD:nacos}
+#      config:
+#        namespace: ${NACOS_NAMESPACE:}
+#        group: DEFAULT_GROUP
+#        file-extension: yaml
+#        refresh-enabled: true
+#    discovery:
+#      enabled: false
+#  lifecycle:
+#    timeout-per-shutdown-phase: 30s
+
+# =============================================================================
+#  Server / Tomcat
+# =============================================================================
+server:
+  port: ${SERVER_PORT:8080}
+  # 如需统一前缀可打开：servlet.context-path: /api/v1
+  servlet:
+    context-path: /api/v1
+  # 推荐关闭，Controller 上用 @RequestMapping("/api/v1/xxx") 更可控
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    accept-count: 100
+    connection-timeout: 20000
+    max-keep-alive-requests: 100
+    uri-encoding: utf-8
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/css,text/javascript,application/javascript
+    min-response-size: 1024
+  error:
+    whitelabel:
+      enabled: false
+    include-message: always
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+# =============================================================================
+#  MyBatis-Plus
+# =============================================================================
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.course.backend.**.entity
+  type-handlers-package: com.course.backend.**.handler
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'null' # 注意加引号，否则被解析成 YAML null
+    call-setters-on-nulls: true
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+    enable-sql-runner: false
+    db-config:
+      id-type: auto
+      table-prefix: t_  # User -> t_user，与建表命名一致
+      insert-strategy: not_null
+      update-strategy: not_null  # 显式置 null 请用 UpdateWrapper.set()
+      # 逻辑删除（t_feedback 为物理删除，其实体不继承带 deleted 的基类）
+      # 实体字段名 deleted，配 @TableField("is_deleted") 映射到列
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+
+# =============================================================================
+#  业务自定义配置（配套 @ConfigurationProperties 类）
+# =============================================================================
+course:
+
+  # ---------------------------- JWT 鉴权 ------------------------------------
+  jwt:
+    secret: ${JWT_SECRET:course-assistant-dev-secret-please-change-in-prod-0123456789}
+    issuer: course-assistant
+    access-token-ttl: 7200        # 秒，2h
+    refresh-token-ttl: 2592000    # 秒，30d
+    clock-skew: 60                # 秒，允许的时钟偏移
+    header: Authorization
+    token-prefix: Bearer
+    rotate-refresh-token: true
+
+  # ---------------------------- CORS ----------------------------------------
+  cors:
+    enabled: true
+    allowed-origins:
+      - http://localhost:5173      # Vite dev
+      - http://localhost:3000
+    allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+    allowed-headers: "*"
+    exposed-headers: X-Request-Id
+    allow-credentials: true
+    max-age: 3600
+
+  # ------------------------- MinIO 对象存储 ---------------------------------
+  storage:
+    minio:
+      endpoint: ${MINIO_ENDPOINT:http://192.168.150.104:9000}
+      public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://192.168.150.104:9000}
+      access-key: ${MINIO_ACCESS_KEY:admin}
+      secret-key: ${MINIO_SECRET_KEY:minioadmin}
+      bucket: ${MINIO_BUCKET:course-assistant}
+      presign-expire-seconds: 900
+      auto-create-bucket: true
+
+  # ------------------------- AI / 模型 --------------------------------------
+  # 注：Milvus 向量库的连接参数（uri / token / collection / dimension / top-k / 阈值）由 Python AI 服务自己管理，
+  #     Java 侧不持有、也不引入 milvus-sdk（PAD 职责边界：Java 只做业务编排与持久化，向量写入/检索全在 Python）。
+  #     「删除资料/课程」需要清向量时，Java 只投递 MQ 事件，由 Python 消费执行并重试。
+  ai:
+    config-file: ${AI_CONFIG_FILE:./config/model-config.local.yml}
+    encrypt-key: ${AI_ENCRYPT_KEY:change-me-aes-256-key}
+    default-provider: openai-compatible
+    disabled-code: 3004
+    chat:
+      max-context-messages: 20
+      max-input-chars: 8000
+      request-timeout: 120s
+      stream:
+        keep-alive-interval: 15s
+        max-duration: 300s
+    # 注：embedding 模型与批量大小同样归 Python 侧（向量化是解析链路的一环），Java 不需要这些参数。
+    # Java → Python AI 服务（RestClient + 虚拟线程；PAD §2 v0.15 写死不引 OpenFeign / Spring AI）
+    # 超时 30s、重试 1 次；未配置大模型时在调用前直接返回 3004，不进入检索
+    python:
+      base-url: ${PYTHON_AI_BASE_URL:http://192.168.150.104:8000}
+      connect-timeout: 5s
+      read-timeout: 30s
+      retry: 1
+    context:
+      key-prefix: "course:ai:ctx:"
+      ttl: 604800                   # 7 天
+  # --------------------- 验证码（注册 / 忘记密码）----------------------------
+  verification:
+    code-length: 6
+    ttl: 300                        # 5 分钟
+    resend-interval: 60             # 60s 内不允许重发
+    max-send-per-day: 10            # 单邮箱每日上限
+    mask-not-found: true
+
+  # ---------------------------- 上传限制 ------------------------------------
+  upload:
+    max-file-size-mb: 50
+    allowed-extensions:
+      - pdf
+      - docx
+      - pptx
+      - md
+    zombie-threshold-hours: 24
+
+  # ---------------------------- 定时任务 ------------------------------------
+  schedule:
+    token-blacklist-cleanup-cron: "0 0 3 * * ?"     # 每天 03:00
+    zombie-upload-cleanup-cron: "0 0 */2 * * ?"     # 每 2 小时
+    enabled: true
+
+  # ---------------------------- Redis Key 前缀 -------------------------------
+  redis:
+    key-prefix: "course:"
+    idempotent-ttl: 300             # 幂等键（建课 / 建会话）有效期
+
+# =============================================================================
+#  Logging（trace_id 走 MDC，与 X-Request-Id 对齐）
+# =============================================================================
+logging:
+  level:
+    root: info
+    com.course.backend: debug
+    com.baomidou.mybatisplus: warn
+    org.springframework.web: info
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%15.15thread] [%X{traceId:--}] %logger{40} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId:--}] %logger{50} - %msg%n"
+  file:
+    name: logs/course-assistant.log
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 15
+      total-size-cap: 2GB

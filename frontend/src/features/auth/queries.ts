@@ -1,12 +1,13 @@
 import { useMutation } from '@tanstack/react-query'
 
-import { changePassword, forgotPassword, login, register } from '@/features/auth/api'
+import { changePassword, forgotPassword, login, register, resetPassword } from '@/features/auth/api'
 import type {
   AuthResponse,
   ChangePasswordBody,
   ForgotPasswordBody,
   LoginBody,
   RegisterBody,
+  ResetPasswordBody,
 } from '@/schemas/auth'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -64,5 +65,16 @@ export function useChangePasswordMutation() {
 export function useForgotPasswordMutation() {
   return useMutation({
     mutationFn: (body: ForgotPasswordBody) => forgotPassword(body),
+  })
+}
+
+/**
+ * 重置密码（PAD §6.2 v0.15）：成功后后端吊销该用户全部 refresh token，
+ * **不自动登录**，由 Dialog 就地提示改用新密码登录。
+ * 刻意不做 onError toast：1008 要就地绑到「验证码」字段。
+ */
+export function useResetPasswordMutation() {
+  return useMutation({
+    mutationFn: (body: ResetPasswordBody) => resetPassword(body),
   })
 }

@@ -2,11 +2,11 @@ openapi: 3.0.3
 
 info:
   title: 智能课程助教平台 API
-  version: 0.14.0
+  version: 0.15.0
   description: |
     > 作者：**星河一叶Roxy** · 开源仓库：[RainxButterfly/SmartCourseTeachingAssistantPlatform](https://github.com/RainxButterfly/SmartCourseTeachingAssistantPlatform)
     >
-    > 本文件由《智能课程助教平台_PAD需求文档》v0.14 导出，是**前后端唯一共享契约**。
+    > 本文件由《智能课程助教平台_PAD需求文档》v0.15 导出，是**前后端唯一共享契约**。
 
     ## 一、通用约定
 
@@ -47,6 +47,8 @@ info:
     | 1005 | 409 | 资源已存在（如课程编号重复、邮箱已注册、作答重复提交） | 是 |
     | 1006 | 409 | 资源下存在关联子资源（需 `cascade=true` 确认） | 是 |
     | 1007 | 400 | 原密码不正确（改密码专用） | 是 |
+    | 1008 | 400 | 验证码不正确或已过期（重置密码专用；错误/过期/邮箱未注册统一返回此码，防枚举） | 是 |
+    | 1009 | 429 | 请求过于频繁，请稍后再试（验证码 60s 重发间隔 / 单邮箱每日上限） | 是 |
     | 2001 | 413 | 文件超过大小限制 | 是 |
     | 2002 | 415 | 不支持的文件格式 | 是 |
     | 2003 | 400 | 解析任务已存在 | 否 |
@@ -306,13 +308,15 @@ paths:
     post:
       tags: [鉴权]
       operationId: forgotPassword
-      summary: 忘记密码（发送重置邮件）
+      summary: 忘记密码第一步：发送验证码
       description: |
         **无论该邮箱是否存在，都返回 `code=0` + `data=null`**（防用户枚举）；只有邮箱格式非法才返回 `1001`。
 
-        真实后端异步发送重置邮件（链接有效期 30 分钟）；前端无论何种结果都展示同一句文案「如果该邮箱已注册，重置链接已发送，请查收」。
+        生成 **6 位数字验证码**写入 Redis（TTL 300 秒，键含邮箱）并**异步发信**；**未注册邮箱不发信但同样返回成功**。
 
-        前端入口在登录页的「忘记密码？」按钮（Dialog），**不新增路由**。
+        节流：同一邮箱 **60s 内重复请求**、或**单日超过 10 次** → `1009`（HTTP 429）。
+
+        前端无论何种结果都展示同一句文案「如果该邮箱已注册，验证码已发送，请查收」。入口在登录页的「忘记密码？」按钮（Dialog），**不新增路由**。
       security: []
       requestBody:
         required: true
@@ -325,6 +329,62 @@ paths:
           $ref: '#/components/responses/SuccessNull'
         '400':
           $ref: '#/components/responses/Error400'
+        '429':
+          description: 请求过于频繁（1009）：60s 内重复发送或超出每日上限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+              example:
+                code: 1009
+                message: 请求过于频繁，请稍后再试
+                data: null
+                trace_id: 3f1a2b4c-5d6e-7f80-9a1b-2c3d4e5f6071
+
+  /auth/reset-password:
+    post:
+      tags: [鉴权]
+      operationId: resetPassword
+      summary: 忘记密码第二步：凭验证码重置密码
+      description: |
+        **无需登录**（用户正是因为登不进来才走这条链路）。
+
+        流程：校验验证码 → 更新 `password_hash` → **吊销该用户全部 refresh token**（jti 写入 `t_token_blacklist`）→ **验证码一次性作废**（校验通过后立即删除）。
+
+        ⚠️ **防枚举**：验证码错误 / 已过期 / 邮箱未注册，**一律返回 `1008`（HTTP 400）**，不区分原因 —— 否则可以用它探测邮箱是否存在。
+
+        成功后**不自动登录**，前端提示用户用新密码回登录页。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessNull'
+        '400':
+          description: 参数非法（1001，如新密码强度不足 / code 非 6 位数字）或验证码不正确（1008）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+              examples:
+                invalidParam:
+                  summary: 1001 新密码强度不足
+                  value:
+                    code: 1001
+                    message: 至少 8 位，需包含大小写字母与数字
+                    data: null
+                    trace_id: 3f1a2b4c-5d6e-7f80-9a1b-2c3d4e5f6071
+                invalidCode:
+                  summary: 1008 验证码不正确或已过期（同时覆盖「邮箱未注册」，防枚举）
+                  value:
+                    code: 1008
+                    message: 验证码不正确或已过期
+                    data: null
+                    trace_id: 3f1a2b4c-5d6e-7f80-9a1b-2c3d4e5f6071
 
   # ============================== 课程 ==============================
   /courses:
@@ -763,6 +823,9 @@ paths:
       tags: [资料]
       operationId: getMaterial
       summary: 资料详情
+      description: |
+        资料详情。前端用于 **`/materials/:id/parse` 深链兜底页**：据 `course_id` 反查所属课程后，
+        重定向到 `/courses/{course_id}?tab=materials`（解析进度主路径是课程详情页内联展示）。
       parameters:
         - $ref: '#/components/parameters/XRequestId'
         - $ref: '#/components/parameters/PathId'
@@ -2044,14 +2107,35 @@ components:
 
     ForgotPasswordRequest:
       type: object
-      description: 忘记密码请求
+      description: 忘记密码第一步：发送验证码请求
       required: [email]
       properties:
         email:
           type: string
           format: email
-          description: 注册邮箱。无论是否存在都返回 code=0（防用户枚举）；仅格式非法返回 1001
+          description: 注册邮箱。无论是否存在都返回 code=0（防用户枚举）；仅格式非法返回 1001；命中节流返回 1009
           example: s@x.com
+
+    ResetPasswordRequest:
+      type: object
+      description: 忘记密码第二步：凭验证码重置密码请求（**无需登录**）
+      required: [email, code, new_password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 接收验证码的邮箱
+          example: s@x.com
+        code:
+          type: string
+          pattern: '^\d{6}$'
+          description: 6 位数字验证码；错误 / 已过期 / 邮箱未注册统一返回 1008
+          example: '836421'
+        new_password:
+          type: string
+          minLength: 8
+          description: 新密码，≥8 位且同时含小写字母、大写字母与数字；违规返回 1001
+          example: New@1234
 
     # ---------------------- 课程 ----------------------
     CourseVO:

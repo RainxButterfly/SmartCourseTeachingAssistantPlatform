@@ -12,17 +12,21 @@ import { LoginPage } from '@/routes/auth/login-page'
 import { useAuthStore } from '@/stores/auth-store'
 
 /**
- * 账号安全（PAD §6.2 v0.14）：改密码 + 忘记密码。
- * 重点回归两条契约铁律：
+ * 账号安全（PAD §6.2 v0.14 / v0.15）：改密码 + 忘记密码（两步式：发码 → 输码重置）。
+ * 重点回归三条契约铁律：
  * - 原密码错误必须是 1007，不能是 1002（否则被 401 拦截器误判为登录失效而登出）；
- * - 忘记密码无论邮箱是否存在都返回同一句文案（防用户枚举）。
+ * - 忘记密码无论邮箱是否存在都返回同一句文案（防用户枚举）；
+ * - 验证码错误/过期/未注册统一 1008 并就地绑到验证码字段，60s 内重发为 1009。
  */
 
 const server = setupServer(...handlers)
 
 const DEMO_PASSWORD = 'Demo@1234'
 const DEMO_EMAIL = 'demo@example.com'
-const SENT_MESSAGE = '如果该邮箱已注册，重置链接已发送，请查收'
+const SENT_MESSAGE = '如果该邮箱已注册，验证码已发送，请查收'
+const RESET_SUCCESS_MESSAGE = '密码已重置，请用新密码登录'
+/** mock 固定验证码（联调约定） */
+const MOCK_CODE = '123456'
 
 function createQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
@@ -145,31 +149,71 @@ describe('账号安全 · 修改密码', () => {
 })
 
 describe('登录页 · 忘记密码', () => {
-  it('已注册邮箱：显示统一的防枚举成功文案', async () => {
+  /** 发码成功即进入重置步（同一弹窗内两步式，PAD §6.2 v0.15） */
+  async function reachResetStep(email: string) {
     const { user, dialog } = await openForgotDialog()
+    await user.type(within(dialog).getByLabelText('邮箱'), email)
+    await user.click(within(dialog).getByRole('button', { name: '发送验证码' }))
+    await within(dialog).findByRole('button', { name: '重置密码' })
+    return { user, dialog }
+  }
 
-    await user.type(within(dialog).getByLabelText('邮箱'), DEMO_EMAIL)
-    await user.click(within(dialog).getByRole('button', { name: '发送重置链接' }))
+  it('已注册邮箱：发送后显示统一的防枚举成功文案并进入重置步', async () => {
+    const { dialog } = await reachResetStep(DEMO_EMAIL)
 
-    expect(await within(dialog).findByRole('status')).toHaveTextContent(SENT_MESSAGE)
+    expect(within(dialog).getByRole('status')).toHaveTextContent(SENT_MESSAGE)
+    expect(within(dialog).getByLabelText('验证码')).toBeInTheDocument()
   })
 
   it('未注册邮箱：文案与已注册完全一致，不泄露账号是否存在', async () => {
-    const { user, dialog } = await openForgotDialog()
+    const { dialog } = await reachResetStep('nobody@example.com')
 
-    await user.type(within(dialog).getByLabelText('邮箱'), 'nobody@example.com')
-    await user.click(within(dialog).getByRole('button', { name: '发送重置链接' }))
-
-    expect(await within(dialog).findByRole('status')).toHaveTextContent(SENT_MESSAGE)
+    expect(within(dialog).getByRole('status')).toHaveTextContent(SENT_MESSAGE)
   })
 
   it('邮箱格式非法时就地报错且不发请求', async () => {
     const { user, dialog } = await openForgotDialog()
 
     await user.type(within(dialog).getByLabelText('邮箱'), 'not-an-email')
-    await user.click(within(dialog).getByRole('button', { name: '发送重置链接' }))
+    await user.click(within(dialog).getByRole('button', { name: '发送验证码' }))
 
     expect(await within(dialog).findByText('邮箱格式不正确')).toBeInTheDocument()
     expect(within(dialog).queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('重置成功：就地提示且不自动登录', async () => {
+    const { user, dialog } = await reachResetStep(DEMO_EMAIL)
+
+    await user.type(within(dialog).getByLabelText('验证码'), MOCK_CODE)
+    await user.type(within(dialog).getByLabelText('新密码'), 'New@1234')
+    await user.type(within(dialog).getByLabelText('确认新密码'), 'New@1234')
+    await user.click(within(dialog).getByRole('button', { name: '重置密码' }))
+
+    expect(await within(dialog).findByRole('status')).toHaveTextContent(RESET_SUCCESS_MESSAGE)
+    // 不自动登录：Dialog 未关闭、登录页仍在背后，本地会话未被写入
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '登录', hidden: true })).toBeInTheDocument()
+    expect(useAuthStore.getState().refreshToken).toBe('mock-refresh-token')
+  })
+
+  it('验证码错误：统一 1008 并就地绑到验证码字段', async () => {
+    const { user, dialog } = await reachResetStep(DEMO_EMAIL)
+
+    await user.type(within(dialog).getByLabelText('验证码'), '999999')
+    await user.type(within(dialog).getByLabelText('新密码'), 'New@1234')
+    await user.type(within(dialog).getByLabelText('确认新密码'), 'New@1234')
+    await user.click(within(dialog).getByRole('button', { name: '重置密码' }))
+
+    expect(await within(dialog).findByText('验证码不正确或已过期')).toBeInTheDocument()
+    // 仍停留在重置步，未进入成功态
+    expect(within(dialog).queryByText(RESET_SUCCESS_MESSAGE)).not.toBeInTheDocument()
+  })
+
+  it('60s 内重新发送：命中 1009 就地提示', async () => {
+    const { user, dialog } = await reachResetStep(DEMO_EMAIL)
+
+    await user.click(within(dialog).getByRole('button', { name: '重新发送' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('请求过于频繁，请稍后再试')
   })
 })

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Spring Boot parent, manages dependency versions. 3.2.5 is current enterprise LTS line. -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.2.5</version>
+		<relativePath/>
+	</parent>
+
+	<groupId>com.course</groupId>
+	<artifactId>course-assistant</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>course-assistant</name>
+	<description>Smart Course Assistant Backend</description>
+
+	<properties>
+		<java.version>21</java.version>
+		<!-- Version must match a GitHub tag on RainxButterfly/xingye-kit. Use v1.0.0 / 1.0.0 / commit-hash per repo releases. -->
+		<xingye-kit.version>v1.0.0</xingye-kit.version>
+		<!-- MyBatis-Plus version pinned explicitly (not managed by Spring Boot parent) -->
+		<mybatis-plus.version>3.5.5</mybatis-plus.version>
+	</properties>
+
+	<!-- JitPack repository, required to resolve GitHub-based artifacts. Must NOT be shadowed by mirrorOf=* in settings.xml. -->
+	<repositories>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</pluginRepository>
+	</pluginRepositories>
+
+	<dependencies>
+		<!-- Spring MVC + embedded Tomcat -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<!-- MyBatis-Plus for Spring Boot 3 -->
+		<dependency>
+			<groupId>com.baomidou</groupId>
+			<artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+			<version>${mybatis-plus.version}</version>
+		</dependency>
+
+		<!-- MySQL JDBC driver (new GA coordinate after relocation) -->
+		<dependency>
+			<groupId>com.mysql</groupId>
+			<artifactId>mysql-connector-j</artifactId>
+		</dependency>
+
+		<!-- Spring Data Redis (Lettuce client) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.lettuce</groupId>
+			<artifactId>lettuce-core</artifactId>
+		</dependency>
+
+		<!-- Jakarta Bean Validation -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
+		<!-- General-purpose utility library -->
+		<dependency>
+			<groupId>cn.hutool</groupId>
+			<artifactId>hutool-all</artifactId>
+			<version>5.8.23</version>
+		</dependency>
+
+		<!-- JJWT API (compile scope) -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>0.11.5</version>
+		</dependency>
+		<!-- JJWT implementation (runtime scope) -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.11.5</version>
+			<scope>runtime</scope>
+		</dependency>
+		<!-- JJWT Jackson binding (runtime scope) -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>0.11.5</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Nacos config center client (Spring Cloud Alibaba 2022.0.0.0 line, compatible with Boot 3.2.x) -->
+		<!-- <dependency> -->
+		<!-- 	<groupId>com.alibaba.cloud</groupId> -->
+		<!-- 	<artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId> -->
+		<!-- 	<version>2023.0.1.0</version> -->
+		<!-- </dependency> -->
+
+		<!-- xingye-kit -->
+		<dependency>
+			<groupId>com.github.RainxButterfly</groupId>
+			<artifactId>xingye-kit</artifactId>
+			<version>v1.0.0</version>
+		</dependency>
+
+		<!-- Test dependencies -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- MinIO：资料上传 presign 直传 -->
+		<dependency>
+			<groupId>io.minio</groupId>
+			<artifactId>minio</artifactId>
+			<version>8.5.9</version>
+		</dependency>
+
+		<!-- Milvus：不由 Java 侧引入。
+		     依据 PAD 职责边界「Java 只做业务编排/权限/事务/持久化；Python 只做 AI 能力（解析、向量化、检索、生成、出题）」，
+		     向量库的写入与检索全部在 Python AI 服务；删除资料要清向量时 Java 只投递 MQ 事件，由 Python 消费执行。
+		     故此处不引入 milvus-sdk-java（避免与 Milvus server 版本强耦合，也避免 Java/Python 双写向量导致不一致）。 -->
+
+		<!-- 邮件：注册验证码 / 忘记密码 -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
+		<!-- Lettuce 连接池  -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-pool2</artifactId>
+		</dependency>
+
+		<!-- rabbitMQ -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- Spring Boot repackage plugin, produces executable jar -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+</project>

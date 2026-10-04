@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import {
   deleteMaterial,
   fetchDownloadUrl,
+  fetchMaterial,
   fetchMaterialList,
   fetchParseStatus,
   renameMaterial,
@@ -19,6 +20,20 @@ export function useMaterialListQuery(courseId: number, query: MaterialListQuery)
       queryKey: queryKeys.materials.list(courseId, query),
       queryFn: () => fetchMaterialList(courseId, query),
       enabled: Number.isFinite(courseId) && courseId > 0,
+    }),
+  )
+}
+
+/**
+ * 资料详情。
+ * 用途：`/materials/:id/parse` 深链兜底页据此反查所属课程，再重定向到该课程的资料 Tab。
+ */
+export function useMaterialQuery(materialId: number) {
+  return useQuery(
+    queryOptions({
+      queryKey: queryKeys.materials.detail(materialId),
+      queryFn: () => fetchMaterial(materialId),
+      enabled: Number.isInteger(materialId) && materialId > 0,
     }),
   )
 }

@@ -1,5 +1,0 @@
-﻿
-> smart-course-ta-frontend@0.1.0 lint
-> biome check --write src tests
-
-Checked 130 files in 625ms. Fixed 1 file.

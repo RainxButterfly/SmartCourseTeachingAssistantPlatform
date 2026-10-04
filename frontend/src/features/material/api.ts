@@ -72,6 +72,12 @@ export async function completeUpload(body: CompleteBody): Promise<UploadResponse
   return UploadResponseSchema.parse(raw)
 }
 
+/** GET /materials/{id} —— 资料详情（`/materials/:id/parse` 深链兜底页据此反查所属课程） */
+export async function fetchMaterial(id: number): Promise<Material> {
+  const raw = await requestData({ method: 'GET', url: `/materials/${id}` })
+  return MaterialSchema.parse(raw)
+}
+
 /** GET /materials/{id}/parse-status —— 解析进度轮询 */
 export async function fetchParseStatus(materialId: number): Promise<ParseStatus> {
   const raw = await requestData({ method: 'GET', url: `/materials/${materialId}/parse-status` })

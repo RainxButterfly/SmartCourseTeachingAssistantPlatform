@@ -16,6 +16,8 @@ import {
   RefreshBodySchema,
   type RegisterBody,
   RegisterBodySchema,
+  type ResetPasswordBody,
+  ResetPasswordBodySchema,
   type User,
   UserSchema,
 } from '@/schemas/auth'
@@ -29,6 +31,8 @@ export function resolveAuthErrorMessage(error: unknown): string {
     if (error.code === ERROR_CODES.UNAUTHORIZED) return '邮箱或密码错误'
     if (error.code === ERROR_CODES.CONFLICT) return '该邮箱已注册，请直接登录'
     if (error.code === ERROR_CODES.INVALID_OLD_PASSWORD) return '原密码不正确'
+    if (error.code === ERROR_CODES.INVALID_VERIFICATION_CODE) return '验证码不正确或已过期'
+    if (error.code === ERROR_CODES.TOO_MANY_REQUESTS) return '请求过于频繁，请稍后再试'
   }
   return resolveErrorMessage(error)
 }
@@ -40,6 +44,14 @@ export function resolveAuthErrorMessage(error: unknown): string {
  */
 export function isInvalidOldPassword(error: unknown): boolean {
   return error instanceof ApiError && error.code === ERROR_CODES.INVALID_OLD_PASSWORD
+}
+
+/**
+ * 验证码不正确或已过期（1008，含邮箱未注册）。
+ * 重置密码表单须就地绑到「验证码」字段，且不区分具体原因（防枚举）。
+ */
+export function isInvalidVerificationCode(error: unknown): boolean {
+  return error instanceof ApiError && error.code === ERROR_CODES.INVALID_VERIFICATION_CODE
 }
 
 export async function login(body: LoginBody): Promise<AuthResponse> {
@@ -108,5 +120,17 @@ export async function forgotPassword(body: ForgotPasswordBody): Promise<void> {
     method: 'POST',
     url: '/auth/forgot-password',
     data: ForgotPasswordBodySchema.parse(body),
+  })
+}
+
+/**
+ * POST /auth/reset-password —— 凭 6 位验证码重置密码。
+ * 成功后后端吊销该用户全部 refresh token，**不自动登录**，前端提示改用新密码登录。
+ */
+export async function resetPassword(body: ResetPasswordBody): Promise<void> {
+  await http.request<null>({
+    method: 'POST',
+    url: '/auth/reset-password',
+    data: ResetPasswordBodySchema.parse(body),
   })
 }

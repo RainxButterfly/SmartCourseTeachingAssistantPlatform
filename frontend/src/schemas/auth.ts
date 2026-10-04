@@ -79,6 +79,26 @@ export const ForgotPasswordBodySchema = z.object({
 })
 export type ForgotPasswordBody = z.infer<typeof ForgotPasswordBodySchema>
 
+/** 邮箱验证码固定 6 位数字（PAD §6.2 v0.15） */
+export const VERIFICATION_CODE_PATTERN = /^\d{6}$/
+
+/** POST /auth/reset-password 上线报文（凭验证码重置密码，不含确认新密码） */
+export const ResetPasswordBodySchema = z.object({
+  email: z.string().trim().min(1, '请输入邮箱').email('邮箱格式不正确'),
+  code: z.string().regex(VERIFICATION_CODE_PATTERN, '请输入 6 位数字验证码'),
+  new_password: z.string().regex(PASSWORD_PATTERN, PASSWORD_HINT),
+})
+export type ResetPasswordBody = z.infer<typeof ResetPasswordBodySchema>
+
+/** 表单值：多一个确认新密码，并在其上做一致性校验 */
+export const ResetPasswordFormSchema = ResetPasswordBodySchema.extend({
+  confirm_password: z.string().min(1, '请再次输入新密码'),
+}).refine((values) => values.new_password === values.confirm_password, {
+  path: ['confirm_password'],
+  message: '两次输入的密码不一致',
+})
+export type ResetPasswordFormValues = z.infer<typeof ResetPasswordFormSchema>
+
 /** `?redirect=` 只接受站内路径，避免开放重定向 */
 export function safeRedirect(value: string | null | undefined): string {
   if (value === null || value === undefined) return '/'
