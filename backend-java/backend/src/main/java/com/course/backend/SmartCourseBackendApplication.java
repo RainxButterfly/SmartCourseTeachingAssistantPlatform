@@ -10,10 +10,10 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @MapperScan("com.course.backend.modules.**.mapper")
-public class BackendApplication {
+public class SmartCourseBackendApplication {
     public static void main(String[] args) {
         log.info("开始启动 Smart Course Assistant Backend...");
-        SpringApplication.run(BackendApplication.class, args);
+        SpringApplication.run(SmartCourseBackendApplication.class, args);
         log.info("Smart Course Assistant Backend 已成功启动！");
     }
 }
