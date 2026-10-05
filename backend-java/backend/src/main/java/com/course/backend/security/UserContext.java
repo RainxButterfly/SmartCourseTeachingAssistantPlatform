@@ -1,6 +1,5 @@
 package com.course.backend.security;
 
-import cn.hutool.system.UserInfo;
 import com.course.backend.common.enums.ErrorCode;
 import com.course.backend.common.exception.BizException;
 
