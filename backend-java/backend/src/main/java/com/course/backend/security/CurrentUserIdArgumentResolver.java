@@ -3,6 +3,7 @@ package com.course.backend.security;
 import com.course.backend.common.annotation.CurrentUserId;
 import com.course.backend.common.enums.ErrorCode;
 import com.course.backend.common.exception.BizException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
@@ -31,9 +32,9 @@ public class CurrentUserIdArgumentResolver implements HandlerMethodArgumentResol
 
     @Nullable
     @Override
-    public Object resolveArgument(MethodParameter parameter,
+    public Object resolveArgument(@NotNull MethodParameter parameter,
                                   @Nullable ModelAndViewContainer mavContainer,
-                                  NativeWebRequest webRequest,
+                                  @NotNull NativeWebRequest webRequest,
                                   @Nullable WebDataBinderFactory binderFactory) throws Exception {
         Long userId = UserContext.get();
         if (userId == null) {

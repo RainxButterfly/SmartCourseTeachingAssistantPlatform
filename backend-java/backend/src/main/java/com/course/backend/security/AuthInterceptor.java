@@ -6,6 +6,7 @@ import com.course.backend.config.properties.JwtProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -24,8 +25,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request,
-                             HttpServletResponse response,
-                             Object handler) throws Exception {
+                             @NotNull HttpServletResponse response,
+                             @NotNull Object handler) {
         // 1. 执行CORS 预检请求（OPTIONS 不带Authorization）
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
@@ -48,10 +49,10 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request,
-                                HttpServletResponse response,
-                                Object handler,
-                                @Nullable Exception ex) throws Exception {
+    public void afterCompletion(@NotNull HttpServletRequest request,
+                                @NotNull HttpServletResponse response,
+                                @NotNull Object handler,
+                                @Nullable Exception ex) {
         // 请求结束后必须清理，否则线程池复用userId会串到其他请求
         UserContext.clear();
     }
