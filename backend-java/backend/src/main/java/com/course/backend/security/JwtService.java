@@ -1,5 +1,6 @@
 package com.course.backend.security;
 
+import cn.hutool.core.lang.UUID;
 import com.course.backend.config.properties.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 /**
@@ -39,6 +42,7 @@ public class JwtService {
     public String generateAccessToken(Long userId) {
         Instant now = Instant.now();
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(String.valueOf(userId))
                 .claim(CLAIM_TYPE, CLAIM_TYPE_ACCESS)
                 .issuer(jwtProperties.getIssuer())
@@ -54,11 +58,13 @@ public class JwtService {
     public String generateRefreshToken(Long userId) {
         Instant now = Instant.now();
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(String.valueOf(userId))
                 .claim(CLAIM_TYPE, CLAIM_TYPE_REFRESH)
                 .issuer(jwtProperties.getIssuer())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(jwtProperties.getRefreshTtl())))
+                .signWith(secretKey)
                 .compact();
     }
 
@@ -149,7 +155,56 @@ public class JwtService {
         return token.isEmpty() ? null : token;
     }
 
+    /**
+     * 获取 access token 的过期时间（秒）
+     * @return 过期时间（秒）
+     */
+    public long getAccessTokenExpireSeconds() {
+        return jwtProperties.getAccessTtl().getSeconds();
+    }
 
+    /**
+     * 从 token 中提取 jti
+     * @param token token
+     * @return jti
+     */
+    public String extractJti(String token) {
+        Claims claims = parseToken(token);
+        System.out.println("extractJti 解析出来的 claims = " + claims);
+        if (claims == null) {
+            return null;
+        }
+        return claims.getId();
+    }
+
+    /**
+     * 从 token 中提取过期时间
+     * @param token token
+     * @return 过期时间
+     */
+    public Date extractExpiration(String token) {
+        Claims claims = parseToken(token);
+        if (claims == null) {
+            return null;
+        }
+        return claims.getExpiration();
+    }
+
+    /**
+     * 从 token 中提取过期时间（LocalDateTime）
+     * @param token token
+     * @return 过期时间（LocalDateTime）
+     */
+    public LocalDateTime extractExpirationAsLocalDateTime(String token) {
+        Claims claims = parseToken(token);
+        if (claims == null) {
+            return null;
+        }
+        return claims.getExpiration()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+    }
 
     /**
      * token 对

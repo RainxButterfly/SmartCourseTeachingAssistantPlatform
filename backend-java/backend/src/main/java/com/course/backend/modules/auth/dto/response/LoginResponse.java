@@ -16,7 +16,7 @@ public class LoginResponse {
     // 刷新令牌
     private String refreshToken;
     // 有效期
-    private Integer expiresIn;
+    private Long expiresIn;
     // 用户信息
-    private UserVO userVO;
+    private UserVO user;
 }

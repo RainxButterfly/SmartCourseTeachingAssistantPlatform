@@ -22,6 +22,7 @@ frontend/.vite/
 frontend/.biome-cache/
 frontend/coverage/
 frontend/.turbo/
+.env
 
 # ============================================================
 # 🟨 后端 Java (backend-java/)
@@ -32,6 +33,8 @@ backend-java/.gradle/
 backend-java/**/build/
 backend-java/out/
 backend-java/logs/
+# 忽略个人本地配置
+backend-java/backend/src/main/resources/application.yml
 
 # ============================================================
 # 🟪 后端 Python (backend-python/)

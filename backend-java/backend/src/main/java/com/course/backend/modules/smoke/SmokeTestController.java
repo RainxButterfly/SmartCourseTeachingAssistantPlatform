@@ -2,6 +2,7 @@ package com.course.backend.modules.smoke;
 
 import com.course.backend.common.annotation.CurrentUserId;
 import com.course.backend.security.JwtService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +18,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "冒烟测试", description = "demo冒烟测试")
 public class SmokeTestController {
     private final JwtService jwtService;
 

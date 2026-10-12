@@ -3,6 +3,7 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+!**/src/main/resources/application.yml
 
 ### STS ###
 .apt_generated
@@ -35,3 +36,4 @@ build/
 ### 本地敏感配置与运行日志（务必保留，否则会把 API Key 提交上去）###
 /logs/
 /config/model-config.local.yml
+.env

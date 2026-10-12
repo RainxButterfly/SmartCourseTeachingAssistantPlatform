@@ -1,7 +1,7 @@
 package com.course.backend.modules.auth.mapper;
 
-import com.course.backend.modules.auth.entity.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.course.backend.modules.auth.entity.User;
 
 /**
  * <p>
