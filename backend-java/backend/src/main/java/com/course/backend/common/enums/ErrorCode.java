@@ -1,5 +1,7 @@
 package com.course.backend.common.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +42,8 @@ public enum ErrorCode {
     // ─── 9000 兜底 ───
     INTERNAL_ERROR(9000, 500, "系统内部错误");
 
+    @EnumValue
+    @JsonValue
     private final int code;
     private final int httpStatus;
     private final String message;

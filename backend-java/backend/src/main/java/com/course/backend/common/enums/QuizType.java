@@ -1,0 +1,27 @@
+package com.course.backend.common.enums;
+
+import com.baomidou.mybatisplus.annotation.EnumValue;
+import com.fasterxml.jackson.annotation.JsonValue;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ *
+ * @author StarLeaf-Roxy
+ * @since 2026/10/16
+ */
+
+@Getter
+@RequiredArgsConstructor
+public enum QuizType {
+    SINGLE("SINGLE"),
+    MULTIPLE("MULTIPLE"),
+    FILL("FILL"),
+    ESSAY("ESSAY");
+
+    @JsonValue
+    @EnumValue
+    @Schema(description = "Quiz type")
+    private final String value;
+}

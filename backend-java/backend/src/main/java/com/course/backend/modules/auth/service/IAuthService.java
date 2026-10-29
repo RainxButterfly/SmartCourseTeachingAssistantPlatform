@@ -9,6 +9,8 @@ import com.course.backend.modules.auth.vo.UserVO;
 import com.course.backend.modules.auth.entity.User;
 import jakarta.validation.Valid;
 
+import java.util.List;
+
 /**
  * <p>
  * 用户 服务类
@@ -68,8 +70,15 @@ public interface IAuthService extends IService<User> {
     void sendResetCode(ForgotPasswordRequest request);
 
     /**
-     * 重置密码
+     * 重置密码（无需登录，凭邮箱 + 6 位验证码）
      * @param request 重置密码请求
      */
-    void resetPassword(@Valid ResetPasswordRequest request,  String token);
+    void resetPassword(@Valid ResetPasswordRequest request);
+
+    /**
+     * 根据 id 获取用户
+      * @param id 用户 id
+      * @return 用户
+     */
+    List<User> getUserByBathIds(List<Long> ids);
 }

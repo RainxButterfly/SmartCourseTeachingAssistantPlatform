@@ -1,6 +1,7 @@
 package com.course.backend.modules.auth.controller;
 
 
+import com.course.backend.common.annotation.PublicApi;
 import com.course.backend.common.response.ApiResponse;
 import com.course.backend.modules.auth.dto.request.*;
 import com.course.backend.modules.auth.dto.response.AuthTokens;
@@ -35,18 +36,21 @@ public class AuthController {
     private final IAuthService authService;
     private final JwtService jwtService;
 
+    @PublicApi
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "邮箱唯一，密码强度≥8且含大小写数字")
     public ApiResponse<LoginResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
         return authService.register(registerRequest);
     }
 
+    @PublicApi
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "邮箱或密码错误一律返回 1002，不区分「邮箱不存在」与「密码错误」，避免账号枚举。")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         return authService.login(loginRequest);
     }
 
+    @PublicApi
     @PostMapping("/refresh")
     @Operation(summary = "刷新令牌", description = "刷新令牌，返回新的访问令牌和刷新令牌")
     public ApiResponse<AuthTokens> refreshToken(@RequestBody RefreshTokenRequest refreshTokenRequest) {
@@ -83,6 +87,7 @@ public class AuthController {
         return authService.changePassword(request, token);
     }
 
+    @PublicApi
     @PostMapping("/forgot-password")
     @Operation(summary = "忘记密码第一步", description = "发送验证码，无论邮箱是否存在，都返回成功")
     public ApiResponse<Void> sendResetCode(@Valid @RequestBody ForgotPasswordRequest request) {
@@ -90,11 +95,11 @@ public class AuthController {
         return ApiResponse.ok();
     }
 
+    @PublicApi
     @PostMapping("/reset-password")
-    @Operation(summary = "忘记密码第二步", description = "修改密码")
-    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request,
-                                           @RequestHeader("Authorization") String token) {
-        authService.resetPassword(request, token);
+    @Operation(summary = "忘记密码第二步", description = "凭邮箱 + 6 位验证码重置密码，无需登录")
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
         return ApiResponse.ok();
     }
 }

@@ -78,10 +78,11 @@ public class User implements Serializable {
     private LocalDateTime updatedAt;
 
     /**
-     * 软删：0=正常 1=已删
+     * 软删：false=正常 true=已删
+     * 属性名必须是 deleted，才能匹配 yml 的 logic-delete-field: deleted
      */
     @TableField("is_deleted")
-    private Boolean isDeleted;
+    private Boolean deleted;
 
 
 }

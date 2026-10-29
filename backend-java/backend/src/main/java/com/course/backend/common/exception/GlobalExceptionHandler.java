@@ -5,6 +5,7 @@ import com.course.backend.common.response.ApiResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -109,6 +110,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(internalError.getHttpStatus())
                 .body(ApiResponse.fail(internalError, internalError.getMessage()));
+    }
+
+    /**
+     * 唯一约束冲突：并发插入撞 DB 唯一索引。
+     * 语义上就是「资源已存在」，映射为 1005（而非兜底的 9000）。
+     */
+    @ExceptionHandler(DuplicateKeyException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateKey(DuplicateKeyException e) {
+        log.warn("唯一键冲突: {}", e.getMessage());
+        ErrorCode errorCode = ErrorCode.RESOURCE_CONFLICT;
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ApiResponse.fail(errorCode, errorCode.getMessage()));
     }
 
     /**

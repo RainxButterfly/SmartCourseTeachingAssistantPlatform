@@ -27,23 +27,21 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     /**
      * 注册拦截器，统一鉴权
+     * 业务公开接口（/auth/login、/auth/register、/auth/refresh、/auth/forgot-password、
+     * /auth/reset-password）已改为注解驱动（@PublicApi），不再在这里维护路径；
+     * 这里只保留「非业务」的放行路径。
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
        registry.addInterceptor(authInterceptor)
                .addPathPatterns("/**")    // 拦截所有请求
-               .excludePathPatterns(      // 放行公开接口
-                       "/auth/login",     // 登录
-                       "/auth/register",  // 注册
-                       "/auth/forgot-password",   // 验证码
-                       "/auth/refresh",   // 刷新token
+               .excludePathPatterns(      // 放行非业务路径
                        "/demo/**",        // 示例接口
                        "/error",          // 错误路径
                        "/doc.html",       // knife4j
                        "/webjars/**",
                        "/v3/api-docs/**",
-                       "/swagger-ui/**",
-                       "/auth/reset-password"  // 重置密码
+                       "/swagger-ui/**"
                );
     }
 

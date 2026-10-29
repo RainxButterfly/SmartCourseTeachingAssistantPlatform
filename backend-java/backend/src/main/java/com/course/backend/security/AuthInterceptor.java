@@ -1,5 +1,6 @@
 package com.course.backend.security;
 
+import com.course.backend.common.annotation.PublicApi;
 import com.course.backend.common.enums.ErrorCode;
 import com.course.backend.common.exception.BizException;
 import com.course.backend.config.properties.JwtProperties;
@@ -11,10 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * 登录鉴权拦截器：验证请求头中的 JWT
+ * 白名单采用注解驱动（@PublicApi）：接口上标了注解就免鉴权，没标一律拦 —— 比维护路径列表不易漏（PAD 写死）
  * @author StarLeaf-Roxy
  * @since 2026/10/4
  */
@@ -36,7 +39,18 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 2. 从请求头中解析token， 例如 "Bearer xxx.yyy.zzz" -> "xxx.yyy.zzz"
+        // 2. 命中 @PublicApi 的接口直接放行（方法上或类上标注均可）
+        if (handler instanceof HandlerMethod handlerMethod) {
+            PublicApi publicApi = handlerMethod.getMethodAnnotation(PublicApi.class);
+            if (publicApi == null) {
+                publicApi = handlerMethod.getBeanType().getAnnotation(PublicApi.class);
+            }
+            if (publicApi != null) {
+                return true;
+            }
+        }
+
+        // 3. 从请求头中解析token， 例如 "Bearer xxx.yyy.zzz" -> "xxx.yyy.zzz"
         String header = request.getHeader(jwtProperties.getHeader());
         log.info("当前请求的header: {}", header);
         String token = jwtService.resolveBearerToken(header);
@@ -46,20 +60,20 @@ public class AuthInterceptor implements HandlerInterceptor {
             throw new BizException(ErrorCode.INVALID_OR_EXPIRED_TOKEN, "登录已失效，请重新登录");
         }
 
-        // 3. 校验token并提取userId
+        // 4. 校验token并提取userId
         Long userId = jwtService.extractUserId(token);
         if (userId == null) {
             throw new BizException(ErrorCode.INVALID_OR_EXPIRED_TOKEN, "登录已失效，请重新登录");
         }
         log.info("提取出来的userId：{}", userId);
         
-        // 4. 检验是否被吊销
+        // 5. 检验是否被吊销
         String jti = jwtService.extractJti(token);
         if (blacklistService.isBlacklisted(jti)) {
             throw new BizException(ErrorCode.INVALID_OR_EXPIRED_TOKEN, "登录已失效，请重新登录");
         }
 
-        // 5. 放入用户上下文 为后续继续使用
+        // 6. 放入用户上下文 为后续继续使用
         UserContext.set(userId);
 
         return true;

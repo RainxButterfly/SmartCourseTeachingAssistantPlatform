@@ -37,3 +37,4 @@ build/
 /logs/
 /config/model-config.local.yml
 .env
+/src/main/resources/application.yml

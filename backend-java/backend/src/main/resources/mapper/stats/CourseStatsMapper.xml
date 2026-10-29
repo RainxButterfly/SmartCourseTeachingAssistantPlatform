@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.course.backend.modules.stats.mapper.CourseStatsMapper">
+
+    <!--
+      单课程统计：五个子查询拼成一行，只走一次数据库往返。
+      口径（已确认）：
+        1. course_id = 0（检索全部资料）的会话不属于任何课程，天然被 course_id 条件排除；
+        2. 统计视角 = 当前用户（material.uploaded_by / conversation.user_id）；
+        3. 会话软删后其消息也不计入（两个 is_deleted = 0）。
+      注意：这不是「一次扫描五张表」，而是 5 个独立子查询；单课程详情数据量小，足够快。
+      列名 material_count 靠 map-underscore-to-camel-case 自动映射到 materialCount。
+    -->
+    <select id="selectCourseStats"
+            resultType="com.course.backend.modules.stats.dto.response.CourseStatsSnapshot">
+        SELECT
+            (SELECT COUNT(*)
+             FROM t_material m
+             WHERE m.course_id = #{courseId}
+               AND m.uploaded_by = #{userId}
+               AND m.is_deleted = 0)                                      AS material_count,
+
+            (SELECT COUNT(*)
+             FROM t_material m
+             WHERE m.course_id = #{courseId}
+               AND m.uploaded_by = #{userId}
+               AND m.is_deleted = 0
+               AND m.status = 'READY')                                    AS ready_material_count,
+
+            (SELECT COUNT(*)
+             FROM t_conversation c
+             WHERE c.course_id = #{courseId}
+               AND c.user_id = #{userId}
+               AND c.is_deleted = 0)                                      AS conversation_count,
+
+            (SELECT COUNT(*)
+             FROM t_message msg
+             INNER JOIN t_conversation c ON msg.conversation_id = c.id
+             WHERE c.course_id = #{courseId}
+               AND c.user_id = #{userId}
+               AND c.is_deleted = 0
+               AND msg.is_deleted = 0
+               AND msg.role = 'USER')                                     AS question_count,
+
+            (SELECT AVG(q.correct / q.total)
+             FROM t_quiz_attempt q
+             WHERE q.course_id = #{courseId}
+               AND q.user_id = #{userId}
+               AND q.is_deleted = 0
+               AND q.submitted_at IS NOT NULL
+               AND q.total &gt; 0)                                          AS quiz_accuracy
+    </select>
+
+</mapper>

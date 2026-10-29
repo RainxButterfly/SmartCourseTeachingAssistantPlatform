@@ -32,8 +32,8 @@ public class ResetPasswordRequest {
     /**
      * 新密码，≥8 位且同时含小写字母、大写字母与数字；违规返回 1001
      */
-    @JsonProperty("password")
-    @Schema(description = "密码", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("new_password")
+    @Schema(description = "新密码", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank
-    private String password;
+    private String newPassword;
 }

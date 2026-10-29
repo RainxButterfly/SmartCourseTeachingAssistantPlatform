@@ -2,10 +2,11 @@ package com.course.backend.modules.auth.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.RandomUtil;
-import com.course.backend.common.constant.AuthRedisKeyConstants;
 import com.course.backend.common.enums.ErrorCode;
 import com.course.backend.common.exception.BizException;
 import com.course.backend.common.response.ApiResponse;
+import com.course.backend.common.util.RedisKeyBuilder;
+import com.course.backend.config.properties.VerificationProperties;
 import com.course.backend.modules.auth.dto.request.*;
 import com.course.backend.modules.auth.dto.response.AuthTokens;
 import com.course.backend.modules.auth.dto.response.LoginResponse;
@@ -26,10 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
-
-import static com.course.backend.common.constant.AuthRedisKeyConstants.*;
 
 /**
  * <p>
@@ -50,6 +51,10 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements IA
     private final StringRedisTemplate redisTemplate;
     // 发信服务
     private final EmailService emailService;
+    // 验证码配置（course.verification.*）
+    private final VerificationProperties verificationProperties;
+    // redis key 构建器
+    private final RedisKeyBuilder redisKeyBuilder;
 
     /**
      * 注册
@@ -79,7 +84,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements IA
         newUser.setPasswordHash(hash);
         newUser.setAvatar(null);
         newUser.setStatus(1);
-        newUser.setIsDeleted(false);
+        newUser.setDeleted(false);
         save(newUser);
 
         // 5. 生成登录凭证
@@ -131,7 +136,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements IA
         // 5. 缓存refresh token
         String newJti = jwtService.extractJti(token.refreshToken());
         Long userId = UserContext.get();
-        String userTokenKey = String.format(AuthRedisKeyConstants.USER_TOKENS, userId);
+        String userTokenKey = redisKeyBuilder.userTokens(userId);
         redisTemplate.opsForSet().add(userTokenKey, newJti);
         redisTemplate.expire(userTokenKey, Duration.ofDays(30));
         redisTemplate.opsForSet().remove(userTokenKey, jti);
@@ -161,7 +166,8 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements IA
 
         // 3. 缓存中删除
         String refreshJti = jwtService.extractJti(refreshToken);
-        String userTokenKey = String.format(AuthRedisKeyConstants.USER_TOKENS, UserContext.get());
+        Long userId = UserContext.get();
+        String userTokenKey = redisKeyBuilder.userTokens(userId);
         redisTemplate.opsForSet().remove(userTokenKey, refreshJti);
     }
 
@@ -186,7 +192,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements IA
         // 2. 获取用户
         Long userId = UserContext.get();
         User user = getById(userId);
-        if (user == null || user.getIsDeleted()) {
+        if (user == null || user.getDeleted()) {
             throw new BizException(ErrorCode.INVALID_OR_EXPIRED_TOKEN);
         }
         // 3. 比对旧密码是否正确
@@ -214,73 +220,83 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements IA
 
     @Override
     public void sendResetCode(ForgotPasswordRequest request) {
-        // 1. 获取邮箱
         String email = request.getEmail();
 
-        // 2. 节流：同一邮箱60s内不能重复请求
-        String throttle = String.format(PWD_RESET_THROTTLE, email);
-        if (redisTemplate.hasKey(throttle)) {
-            return;
+        // 1. 节流：重发间隔内命中直接 1009（契约：验证码重发间隔 → 1009）
+        String throttleKey = redisKeyBuilder.pwdResetThrottle(email);
+        if (redisTemplate.hasKey(throttleKey)) {
+            throw new BizException(ErrorCode.TOO_MANY_REQUESTS);
         }
 
-        // 3 邮箱是否存在
+        // 2. 单邮箱单日上限（契约：单日超限 → 1009）
+        String today = LocalDate.now().toString();
+        String dailyKey = redisKeyBuilder.pwdResetDailyCount(email, today);
+        Long sentCount = redisTemplate.opsForValue().increment(dailyKey);
+        if (sentCount != null && sentCount == 1L) {
+            // 首次计数：设 1 天过期，避免 key 永久残留
+            redisTemplate.expire(dailyKey, Duration.ofDays(1));
+        }
+        if (sentCount != null && sentCount > verificationProperties.getMaxSendPerDay()) {
+            throw new BizException(ErrorCode.TOO_MANY_REQUESTS);
+        }
+
+        // 3. 防枚举：mask-not-found=true（契约默认）时未注册邮箱不发信，但同样返回成功
         Long count = lambdaQuery()
                 .eq(User::getEmail, email)
                 .count();
+        if (count == 0) {
+            if (verificationProperties.isMaskNotFound()) {
+                return;
+            }
+            throw new BizException(ErrorCode.NOT_FOUND, "邮箱未注册");
+        }
 
-        // 3.1 不存在 直接 返回
-        if (count == 0) return;
-
-        // 3.2 存在 -> 生成、缓存、发信验证码
-        String code = generateCode(6);
-        String codeKey = String.format(PWD_RESET_CODE, code);
+        // 4. 生成验证码（长度取配置），以【邮箱】为 key 缓存（契约写死键含邮箱），TTL 取配置
+        String code = generateCode(verificationProperties.getCodeLength());
+        String codeKey = redisKeyBuilder.pwdResetCode(email);
         redisTemplate.opsForValue()
-                .set(codeKey, code, Duration.ofSeconds(300));
-        redisTemplate.opsForValue()
-                .set(throttle, "1", Duration.ofSeconds(60));
+                .set(codeKey, code, Duration.ofSeconds(verificationProperties.getTtl()));
 
+        // 5. 写节流标记，重发间隔内不可重发
+        redisTemplate.opsForValue()
+                .set(throttleKey, "1", Duration.ofSeconds(verificationProperties.getResendInterval()));
+
+        // 6. 异步发信（不阻塞主流程）
         emailService.sendResetCodeAsync(email, code);
     }
 
     @Override
-    public void resetPassword(ResetPasswordRequest request,  String token) {
-        // 1. 邮箱是否已注册
-        // 1.1 未注册 返回1008
+    public void resetPassword(ResetPasswordRequest request) {
+        // 1. 邮箱是否已注册；未注册统一 1008（不区分原因，防枚举）
         String email = request.getEmail();
         User user = lambdaQuery()
                 .eq(User::getEmail, email)
                 .one();
-        if (user == null || user.getIsDeleted()) {
+        if (user == null || user.getDeleted()) {
             throw new BizException(ErrorCode.VERIFICATION_CODE_INVALID);
         }
 
-        // 2. 验证验证码是否正确
-        // 2.1 不正确或过期 返回1008
+        // 2. 校验验证码：key 含邮箱（契约写死），【比对值】而不是 hasKey
         String code = request.getCode();
-        String codeKey = String.format(PWD_RESET_CODE, code);
-        if (!redisTemplate.hasKey(codeKey)) {
+        String codeKey = redisKeyBuilder.pwdResetCode(email);
+        Object stored = redisTemplate.opsForValue().get(codeKey);
+        if (stored == null || !code.equals(stored.toString())) {
             throw new BizException(ErrorCode.VERIFICATION_CODE_INVALID);
         }
 
-        // 3. 密码强度是否符合要求以及判断密码是不是旧密码
-        String oldPwd = user.getPasswordHash();
-        String password = request.getPassword();
-        if (passwordService.matches(password, oldPwd)) {
-            throw new BizException(ErrorCode.VERIFICATION_CODE_INVALID, "新密码不能和原密码一样");
+        // 3. 新密码不能与旧密码相同 + 强度校验（违规 1001）
+        String newPassword = request.getNewPassword();
+        if (passwordService.matches(newPassword, user.getPasswordHash())) {
+            throw new BizException(ErrorCode.VERIFICATION_CODE_INVALID, "新密码不能与原密码相同");
         }
-        passwordService.validateStrength(password);
+        passwordService.validateStrength(newPassword);
 
         // 4. 更新密码
-        user.setPasswordHash(passwordService.hash(password));
+        user.setPasswordHash(passwordService.hash(newPassword));
         updateById(user);
 
-        // 5. 吊销该用户全部refresh token和验证码报废
-        Boolean codeDeleted = redisTemplate.delete(codeKey);
-        if (!codeDeleted) {
-            throw new BizException(ErrorCode.VERIFICATION_CODE_INVALID);
-        }
-
-        String userTokenKey = String.format(USER_TOKENS, user.getId());
+        // 5. 吊销该用户全部 refresh token（强制重新登录，契约写死）
+        String userTokenKey = redisKeyBuilder.userTokens(user.getId());
         Set<String> jtis = redisTemplate.opsForSet().members(userTokenKey);
 
         if (jtis != null && !jtis.isEmpty()) {
@@ -294,6 +310,15 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements IA
             }
         }
 
+        // 6. 验证码一次性作废（放最后：delete 极少失败，失败也只是等 300s 自然过期，不影响已完成的密码更新）
+        redisTemplate.delete(codeKey);
+    }
+
+    @Override
+    public List<User> getUserByBathIds(List<Long> ids) {
+        return lambdaQuery()
+                .in(User::getId, ids)
+                .list();
     }
 
     // 生成验证码
@@ -309,7 +334,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements IA
 
         // 缓存登录凭证
         String jti = jwtService.extractJti(refreshToken);
-        String userTokenKey = String.format(USER_TOKENS, user.getId());
+        String userTokenKey = redisKeyBuilder.userTokens(user.getId());
 
         redisTemplate.opsForSet().add(userTokenKey, jti);
         redisTemplate.expire(userTokenKey, Duration.ofDays(30));
