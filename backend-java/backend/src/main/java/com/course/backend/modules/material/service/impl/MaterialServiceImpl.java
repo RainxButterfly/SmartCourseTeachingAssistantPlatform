@@ -23,12 +23,11 @@ import com.course.backend.modules.material.entity.PendingMaterial;
 import com.course.backend.modules.material.mapper.MaterialMapper;
 import com.course.backend.modules.material.service.IMaterialService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.course.backend.modules.material.service.IParseTaskService;
 import com.course.backend.security.UserContext;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.http.Method;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -63,6 +62,7 @@ public class MaterialServiceImpl extends ServiceImpl<MaterialMapper, Material> i
     private final CourseMapper courseMapper;
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
+    private final IParseTaskService parseTaskService;
 
     @Override
     public void deleteByCourseId(Long id) {
@@ -220,6 +220,9 @@ public class MaterialServiceImpl extends ServiceImpl<MaterialMapper, Material> i
                 .eq(Material::getStatus, UPLOADING.getValue())
                 .set(Material::getStatus, PENDING.getValue())
                 .update();
+        if (!updated) {
+            throw new BizException(ErrorCode.RESOURCE_CONFLICT);
+        }
 
         // 6. 每个 material 插一条任务
         List<ParseTask> tasks = materials.stream().map(m -> {
@@ -231,6 +234,7 @@ public class MaterialServiceImpl extends ServiceImpl<MaterialMapper, Material> i
             task.setIndexedChunks(0);
             return task;
         }).toList();
+        parseTaskService.saveBatch(tasks);
 
         // 7. 组装vo
         return ApiResponse.ok(UploadVO.builder()
@@ -240,6 +244,10 @@ public class MaterialServiceImpl extends ServiceImpl<MaterialMapper, Material> i
                 .build());
     }
 
+    /**
+     * 删除无效对象
+     * @param objectKey 对象键
+     */
     private void removeObjectQuietly(String objectKey) {
         try {
             minioClient.removeObject(

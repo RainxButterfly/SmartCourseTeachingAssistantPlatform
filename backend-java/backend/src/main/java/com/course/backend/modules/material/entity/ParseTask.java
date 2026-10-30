@@ -1,8 +1,6 @@
 package com.course.backend.modules.material.entity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serial;
 import java.time.LocalDateTime;
@@ -77,17 +75,20 @@ public class ParseTask implements Serializable {
     /**
      * 创建时间
      */
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
 
     /**
      * 软删：0=正常 1=已删
      */
-    private Boolean isDeleted;
+    @TableField("is_deleted")
+    private Boolean deleted;
 
 
 }
