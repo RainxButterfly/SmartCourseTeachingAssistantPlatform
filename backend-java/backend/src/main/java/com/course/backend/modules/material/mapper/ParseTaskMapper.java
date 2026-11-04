@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * </p>
  *
  * @author StarLeaf·Roxy
- * @since 2026-10-29
+ * @since 2026-11-04
  */
 public interface ParseTaskMapper extends BaseMapper<ParseTask> {
 

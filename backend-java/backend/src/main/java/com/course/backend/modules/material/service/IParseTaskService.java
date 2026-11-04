@@ -1,5 +1,7 @@
 package com.course.backend.modules.material.service;
 
+import com.course.backend.common.response.ApiResponse;
+import com.course.backend.modules.material.dto.response.ParseStatusVO;
 import com.course.backend.modules.material.entity.ParseTask;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -9,7 +11,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * </p>
  *
  * @author StarLeaf·Roxy
- * @since 2026-10-29
+ * @since 2026-11-04
  */
 public interface IParseTaskService extends IService<ParseTask> {
 

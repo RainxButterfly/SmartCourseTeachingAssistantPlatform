@@ -37,4 +37,5 @@ public interface ICourseService extends IService<Course> {
     ApiResponse<CourseVO> updateCourse(Long id, @Valid CourseDTO courseDTO);
 
     Course getCourseById(Long id);
+
 }

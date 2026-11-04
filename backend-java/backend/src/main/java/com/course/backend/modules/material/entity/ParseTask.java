@@ -1,10 +1,14 @@
 package com.course.backend.modules.material.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 
 import java.io.Serial;
 import java.time.LocalDateTime;
 import java.io.Serializable;
+
+import com.course.backend.common.enums.ParseTaskStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -15,7 +19,7 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author StarLeaf·Roxy
- * @since 2026-10-29
+ * @since 2026-11-04
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -40,7 +44,7 @@ public class ParseTask implements Serializable {
     /**
      * 状态：QUEUED/RUNNING/SUCCESS/FAILED
      */
-    private String status;
+    private ParseTaskStatus status;
 
     /**
      * 进度百分比 0-100
@@ -75,20 +79,17 @@ public class ParseTask implements Serializable {
     /**
      * 创建时间
      */
-    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
 
     /**
      * 软删：0=正常 1=已删
      */
-    @TableField("is_deleted")
-    private Boolean deleted;
+    private Boolean isDeleted;
 
 
 }

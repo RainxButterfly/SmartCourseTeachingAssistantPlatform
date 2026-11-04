@@ -13,6 +13,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.stream.Collectors;
@@ -122,6 +123,14 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = ErrorCode.RESOURCE_CONFLICT;
         return ResponseEntity
                 .status(errorCode.getHttpStatus())
+                .body(ApiResponse.fail(errorCode, errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException e) {
+        log.warn("上传文件超过大小限制：{}", e.getMessage());
+        ErrorCode errorCode = ErrorCode.FILE_SIZE_EXCEEDED;
+        return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ApiResponse.fail(errorCode, errorCode.getMessage()));
     }
 

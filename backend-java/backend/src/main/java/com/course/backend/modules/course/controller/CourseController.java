@@ -1,19 +1,24 @@
 package com.course.backend.modules.course.controller;
 
 
-import com.course.backend.common.annotation.CurrentUserId;
 import com.course.backend.common.response.ApiResponse;
 import com.course.backend.common.response.PageResult;
 import com.course.backend.modules.course.dto.request.CourseDTO;
 import com.course.backend.modules.course.dto.request.CourseQueryRequest;
 import com.course.backend.modules.course.dto.response.*;
 import com.course.backend.modules.course.service.ICourseService;
+import com.course.backend.modules.material.dto.request.MaterialQueryRequest;
+import com.course.backend.modules.material.dto.response.MaterialPage;
+import com.course.backend.modules.material.dto.response.UploadVO;
+import com.course.backend.modules.material.service.IMaterialService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * <p>
@@ -29,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "课程模块", description = "课程分页、新建课程、课程详情等")
 public class CourseController {
     private final ICourseService courseService;
+    private final IMaterialService materialService;
 
     @GetMapping
     @Operation(summary = "课程分页列表", description = "支持关键词、归属（我的/全部）、学期、排序筛选。列表页筛选状态会同步到 URL query（搜索词 replace、离散筛选与翻页 push）。")
@@ -85,5 +91,18 @@ public class CourseController {
     @Operation(summary = "更新课程", description = "请求体与新建一致（全量覆盖）。课程编号重复返回 1005。")
     public ApiResponse<CourseVO> updateCourse(@PathVariable("id") Long id, @Valid @RequestBody CourseDTO courseDTO) {
         return courseService.updateCourse(id, courseDTO);
+    }
+
+    @GetMapping("/{id:\\d+}/materials")
+    @Operation(summary = "课程资料列表（分页）", description = "每页默认 10 条，page 同步到 URL query。")
+    public ApiResponse<MaterialPage> queryMaterialPage(@PathVariable("id") Long id, @ParameterObject MaterialQueryRequest request) {
+        return materialService.queryMaterialPage(id, request);
+    }
+
+    @PostMapping(value = "/{id:\\d+}/materials", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "multipart 直传（仅 ≤10MB 小文件兜底，正常不用）", description = "正常流程一律走「预签名三步走」。此接口仅为小文件兜底，Content-Type: multipart/form-data。")
+    public ApiResponse<UploadVO> multipartUpload(@PathVariable("id") Long id,
+                                                 @RequestParam("file") MultipartFile file) {
+        return materialService.multipartUpload(id, file);
     }
 }

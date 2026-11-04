@@ -10,6 +10,7 @@ import { resetAuthStore } from '@/mocks/handlers/auth'
 import { LoginPage } from '@/routes/auth/login-page'
 import { RegisterPage } from '@/routes/auth/register-page'
 import { useAuthStore } from '@/stores/auth-store'
+import { MemoryStick } from 'lucide-react'
 
 const server = setupServer(...handlers)
 

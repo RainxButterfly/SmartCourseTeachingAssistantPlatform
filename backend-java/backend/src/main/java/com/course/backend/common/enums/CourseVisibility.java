@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- *
+ * 课程可见性枚举
  * @author StarLeaf-Roxy
  * @since 2026/10/16
  */

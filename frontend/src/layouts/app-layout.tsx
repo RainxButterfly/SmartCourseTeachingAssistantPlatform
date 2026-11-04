@@ -71,12 +71,14 @@ function SidebarBody({ collapsed, onToggle, onNavigate }: SidebarBodyProps) {
   return (
     <>
       <div className="flex h-14 items-center gap-2 px-3">
-        <span
+        <img
+          src="/logo-128.png"
+          width={32}
+          height={32}
+          alt=""
           aria-hidden="true"
-          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground"
-        >
-          助
-        </span>
+          className="size-8 shrink-0 rounded-lg object-cover"
+        />
         {collapsed ? null : <span className="truncate font-semibold text-sm">智能课程助教</span>}
       </div>
 

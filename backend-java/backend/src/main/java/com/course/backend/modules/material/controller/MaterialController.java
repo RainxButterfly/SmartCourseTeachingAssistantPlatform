@@ -3,20 +3,17 @@ package com.course.backend.modules.material.controller;
 
 import com.course.backend.common.response.ApiResponse;
 import com.course.backend.modules.material.dto.request.CompleteRequest;
+import com.course.backend.modules.material.dto.request.MaterialName;
 import com.course.backend.modules.material.dto.request.PresignRequest;
-import com.course.backend.modules.material.dto.response.PresignResponse;
-import com.course.backend.modules.material.dto.response.UploadVO;
+import com.course.backend.modules.material.dto.response.*;
 import com.course.backend.modules.material.service.IMaterialService;
+import com.course.backend.modules.material.service.IParseTaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * <p>
@@ -47,4 +44,41 @@ public class MaterialController {
     public ApiResponse<UploadVO> completeUpload(@Valid @RequestBody CompleteRequest request) {
         return materialService.completeUpload(request);
     }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "资料详情", description = "资料详情。")
+    public ApiResponse<MaterialVO> getMaterialDetail(@PathVariable("id") Long id) {
+        return materialService.getMaterialDetail(id);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "重命名资料", description = "仅支持改名（name 为展示名，original_name 不可改）。")
+    public ApiResponse<MaterialVO> renameMaterial(@PathVariable("id") Long id, @Valid @RequestBody MaterialName request) {
+        return materialService.renameMaterial(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "删除资料", description = "同步删除 MinIO 对象与 Milvus 向量，并写入一条 t_activity(type=MATERIAL_DELETED)。")
+    public ApiResponse<DeleteResultVO> deleteMaterial(@PathVariable("id") Long id) {
+        return materialService.deleteMaterial(id);
+    }
+
+    @GetMapping("/{id}/parse-status")
+    @Operation(summary = "解析任务状态（前端轮询）", description = "前端在资料处于中间态（UPLOADING / PENDING / PARSING / EMBEDDING）时轮询。")
+    public ApiResponse<ParseStatusVO> parseTaskStatus(@PathVariable("id") Long id) {
+        return materialService.parseTaskStatus(id);
+    }
+
+    @PostMapping("/{id}/reparse")
+    @Operation(summary = "重新解析", description = "重新投递解析任务，返回新的 task_id。已有进行中的解析任务时返回 2003。")
+    public ApiResponse<UploadVO> reparse(@PathVariable("id") Long id) {
+        return materialService.reparse(id);
+    }
+
+    @GetMapping("/{id}/download")
+    @Operation(summary = "下载原文", description = "返回预签名 GET URL（有效期 900 秒），前端直接跳转/下载，不经过后端转发。")
+    public ApiResponse<DownloadVO> download(@PathVariable("id") Long id) {
+        return materialService.download(id);
+    }
+
 }
