@@ -260,7 +260,7 @@ course:
   ai:
     config-file: ${AI_CONFIG_FILE:./config/model-config.local.yml}
     encrypt-key: ${AI_ENCRYPT_KEY:your_aes_256_encrypt_key}
-    default-provider: openai-compatible
+    default-provider: CUSTOM
     disabled-code: 3004
     chat:
       max-context-messages: 20
